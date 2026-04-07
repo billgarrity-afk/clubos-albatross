@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="300">
+<title>Albatross Golf — League Standings</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #060d09;
+    --bg-card:  #0c1a10;
+    --bg-panel: #091408;
+    --green:    #4ade80;
+    --green-dim:#2d7a4a;
+    --green-glow:rgba(74,222,128,0.12);
+    --gold:     #f0c040;
+    --gold-dim: rgba(240,192,64,0.15);
+    --silver:   #c0cfd8;
+    --bronze:   #cd7f32;
+    --white:    #f0f4f1;
+    --muted:    #5a7060;
+    --border:   rgba(74,222,128,0.1);
+    --red:      #f87171;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); width: 1920px; height: 1080px; overflow: hidden; color: var(--white); position: relative; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"); pointer-events: none; z-index: 999; }
+  body::after { content: ''; position: fixed; top: -20%; left: 50%; transform: translateX(-50%); width: 120%; height: 60%; background: radial-gradient(ellipse, rgba(74,222,128,0.04) 0%, transparent 70%); pointer-events: none; }
+
+  .wrapper { display: grid; grid-template-rows: 88px 1fr 56px; height: 1080px; width: 1920px; }
+
+  .header { background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 56px; position: relative; }
+  .header::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--green), transparent); opacity: 0.5; }
+
+  .header-left { display: flex; align-items: center; gap: 20px; }
+  .logo-mark { width: 52px; height: 52px; border: 1.5px solid var(--green-dim); border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--green-glow); font-size: 22px; }
+  .venue-name { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 3px; color: var(--white); line-height: 1; }
+  .venue-sub { font-size: 11px; color: var(--muted); letter-spacing: 2.5px; text-transform: uppercase; margin-top: 3px; }
+
+  .header-center { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
+  .league-eyebrow { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--green); margin-bottom: 4px; }
+  .league-title { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 2px; color: var(--white); line-height: 1; }
+
+  .header-right { display: flex; align-items: center; gap: 28px; }
+  .live-badge { display: flex; align-items: center; gap: 8px; background: var(--green-glow); border: 1px solid rgba(74,222,128,0.25); border-radius: 4px; padding: 6px 14px; font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--green); }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 1.5s ease-in-out infinite; box-shadow: 0 0 8px var(--green); }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.65); } }
+  .week-block { text-align: right; }
+  .week-num { font-family: 'DM Mono', monospace; font-size: 28px; color: var(--white); letter-spacing: 1px; line-height: 1; }
+  .week-label { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 3px; }
+  .live-time { font-family: 'DM Mono', monospace; font-size: 28px; color: var(--white); letter-spacing: 2px; line-height: 1; text-align: right; }
+  .live-date { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-top: 3px; text-align: right; }
+
+  .main { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 300px; height: 100%; overflow: hidden; }
+
+  .div-col { border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; animation: fadeUp 0.6s ease both; }
+  .div-col:nth-child(1) { animation-delay: 0.05s; }
+  .div-col:nth-child(2) { animation-delay: 0.10s; }
+  .div-col:nth-child(3) { animation-delay: 0.15s; }
+  .div-col:nth-child(4) { animation-delay: 0.20s; }
+  .div-col:nth-child(5) { animation-delay: 0.25s; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+  .div-header { padding: 18px 24px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg-panel); }
+  .div-eyebrow { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .div-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--green); line-height: 1; }
+  .div-meta { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
+
+  .team-list { flex: 1; overflow: hidden; padding: 8px 0; }
+  .team-row { display: flex; align-items: center; gap: 12px; padding: 11px 24px; border-bottom: 1px solid rgba(74,222,128,0.05); position: relative; }
+  .team-row:last-child { border-bottom: none; }
+  .team-row.leader { background: rgba(74,222,128,0.05); }
+  .team-row.leader::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .place { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; min-width: 28px; flex-shrink: 0; }
+  .place.gold { color: var(--gold); }
+  .place.silver { color: var(--silver); }
+  .place.bronze { color: var(--bronze); }
+  .place.other { color: var(--muted); }
+  .team-info { flex: 1; overflow: hidden; }
+  .team-name { font-size: 14px; font-weight: 500; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+  .team-detail { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+  .team-score { font-family: 'DM Mono', monospace; font-size: 16px; color: var(--white); font-weight: 500; flex-shrink: 0; }
+  .team-row.leader .team-score { color: var(--green); }
+  .trend { font-size: 11px; flex-shrink: 0; width: 14px; text-align: center; }
+
+  .playoffs-note { margin: 12px 16px; background: var(--gold-dim); border: 1px solid rgba(240,192,64,0.2); border-radius: 6px; padding: 10px 14px; flex-shrink: 0; }
+  .playoffs-note-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 3px; }
+  .playoffs-note-text { font-size: 12px; color: var(--white); line-height: 1.4; }
+
+  .sponsor-col { background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; animation: fadeUp 0.6s ease 0.3s both; }
+  .sponsor-header { padding: 18px 24px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .sponsor-eyebrow { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .sponsor-title { font-size: 13px; color: var(--white); font-weight: 500; }
+
+  .sponsor-card { margin: 20px 20px 0; background: var(--green-glow); border: 1px solid rgba(74,222,128,0.2); border-radius: 10px; padding: 22px 20px; text-align: center; flex-shrink: 0; }
+  .sponsor-icon { font-size: 28px; margin-bottom: 10px; }
+  .sponsor-tag { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--green); margin-bottom: 6px; }
+  .sponsor-name-big { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 3px; color: var(--green); line-height: 1; margin-bottom: 6px; }
+  .sponsor-person { font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 2px; }
+  .sponsor-brokerage { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+  .sponsor-divider { width: 100%; height: 1px; background: var(--border); margin: 12px 0; }
+  .sponsor-phone { font-family: 'DM Mono', monospace; font-size: 16px; color: var(--green); font-weight: 500; letter-spacing: 1px; margin-bottom: 4px; }
+  .sponsor-handle { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .sponsor-cta { background: var(--green); color: var(--bg); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 9px 16px; border-radius: 6px; display: block; width: 100%; }
+
+  .qr-section { margin: 16px 20px 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; text-align: center; flex-shrink: 0; }
+  .qr-eyebrow { font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .qr-box { width: 80px; height: 80px; background: var(--white); border-radius: 6px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--bg); font-weight: 700; }
+  .qr-text { font-size: 12px; color: var(--white); font-weight: 500; margin-bottom: 3px; }
+  .qr-sub { font-size: 10px; color: var(--muted); line-height: 1.4; }
+
+  .sponsor-col-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
+  .powered-by { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-align: center; }
+  .powered-by b { color: var(--green); font-weight: 600; }
+
+  .footer { background: var(--bg-panel); border-top: 1px solid var(--border); display: flex; align-items: center; overflow: hidden; position: relative; }
+  .footer::before { content: ''; position: absolute; top: -1px; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--green), transparent); opacity: 0.4; }
+  .ticker-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--green); padding: 0 20px; white-space: nowrap; flex-shrink: 0; border-right: 1px solid var(--border); }
+  .ticker-track { flex: 1; overflow: hidden; position: relative; height: 100%; }
+  .ticker-inner { display: flex; align-items: center; height: 100%; white-space: nowrap; animation: ticker 32s linear infinite; }
+  @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+  .ticker-item { font-size: 13px; color: rgba(240,244,241,0.65); padding: 0 40px; letter-spacing: 0.3px; }
+  .ticker-item b { color: var(--white); font-weight: 600; }
+  .ticker-item .hi { color: var(--green); }
+  .footer-time { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); padding: 0 20px; flex-shrink: 0; border-left: 1px solid var(--border); letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-mark">⛳</div>
+      <div>
+        <div class="venue-name">The Albatross</div>
+        <div class="venue-sub">Indoor Golf · Cary, NC</div>
+      </div>
+    </div>
+    <div class="header-center">
+      <div class="league-eyebrow">Current Standings</div>
+      <div class="league-title" id="leagueTitle">2026 Winter Golf League</div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="pulse"></div>Live</div>
+      <div class="week-block">
+        <div class="week-num" id="weekNum">WK 11</div>
+        <div class="week-label" id="weekLabel">of 14</div>
+      </div>
+      <div>
+        <div class="live-time" id="liveTime">—</div>
+        <div class="live-date" id="liveDate">—</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="main" id="mainGrid"></div>
+
+  <footer class="footer">
+    <div class="ticker-label">League News</div>
+    <div class="ticker-track">
+      <div class="ticker-inner" id="tickerInner"></div>
+    </div>
+    <div class="footer-time" id="footerTime">—</div>
+  </footer>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// LEAGUE DATA — Update when Paul sends spreadsheet
+// ═══════════════════════════════════════════
+const LEAGUE = {
+  title: "2026 Winter Golf League",
+  week: "11",
+  totalWeeks: "14",
+
+  sponsor: {
+    tag: "The Golfer's Realtor",
+    name: "CALEB EDWARDS",
+    brokerage: "Coldwell Banker · Triangle Area",
+    phone: "919-378-1542",
+    handle: "@movemetocaryNC",
+    cta: "Search Homes →",
+    icon: "🏡"
+  },
+
+  divisions: [
+    {
+      letter: "A", name: "Condor", meta: "8 teams · 14 weeks",
+      playoffNote: { label: "⚡ Playoffs", text: "Top 4 advance · Begins Week 15" },
+      teams: [
+        { name: "Beef Boyz",             detail: "+3 this week",  score: 1035, trend: "↑", place: "gold" },
+        { name: "OCcasional Birdies",    detail: "–15 back",      score: 1020, trend: "–", place: "silver" },
+        { name: "The Schlongest Drive",  detail: "–155 back",     score: 880,  trend: "↓", place: "bronze" },
+        { name: "Fore Scores & 7 Beers", detail: "–230 back",     score: 805,  trend: "–", place: "other" },
+        { name: "Putt Pirates",          detail: "–295 back",     score: 740,  trend: "↓", place: "other" },
+        { name: "Driver's Ed Dropouts",  detail: "–395 back",     score: 640,  trend: "–", place: "other" }
+      ]
+    },
+    {
+      letter: "B", name: "Albatross", meta: "8 teams · 14 weeks",
+      playoffNote: { label: "⚡ Playoffs", text: "Top 4 advance · Begins Week 15" },
+      teams: [
+        { name: "Northwood Zaddys",   detail: "+8 this week", score: 1080, trend: "↑", place: "gold" },
+        { name: "Fairway to Heaven",  detail: "–45 back",     score: 1035, trend: "–", place: "silver" },
+        { name: "The Rough Riders",   detail: "–190 back",    score: 890,  trend: "↑", place: "bronze" },
+        { name: "Bogey Men",          detail: "–260 back",    score: 820,  trend: "–", place: "other" },
+        { name: "Iron Maidens",       detail: "–330 back",    score: 750,  trend: "↓", place: "other" },
+        { name: "Chip Happens",       detail: "–410 back",    score: 670,  trend: "–", place: "other" }
+      ]
+    },
+    {
+      letter: "C", name: "Birdie", meta: "8 teams · 14 weeks",
+      playoffNote: { label: "⚡ Playoffs", text: "Top 4 advance · Begins Week 15" },
+      teams: [
+        { name: "Wah Gwan Delilah",  detail: "+12 this week 🔥", score: 995, trend: "↑", place: "gold" },
+        { name: "Par for the Course", detail: "–20 back",        score: 975, trend: "↓", place: "silver" },
+        { name: "Loft Expectations",  detail: "–170 back",       score: 825, trend: "–", place: "bronze" },
+        { name: "Tee'd & Confused",   detail: "–255 back",       score: 740, trend: "↑", place: "other" },
+        { name: "Full Send Freddie",  detail: "–315 back",       score: 680, trend: "–", place: "other" },
+        { name: "Sand Trap Saints",   detail: "–390 back",       score: 605, trend: "↓", place: "other" }
+      ]
+    },
+    {
+      letter: "D", name: "Par A", meta: "8 teams · 14 weeks",
+      playoffNote: { label: "⚡ Tiebreaker", text: "Hack Attack vs Shanks · Week 12" },
+      teams: [
+        { name: "Hack Attack",            detail: "Tied for lead", score: 910, trend: "↑", place: "gold" },
+        { name: "Shanks for the Memories",detail: "Tied for lead", score: 910, trend: "↑", place: "gold" },
+        { name: "The Divot Diggers",      detail: "–85 back",      score: 825, trend: "–", place: "bronze" },
+        { name: "Grip It & Rip It",       detail: "–160 back",     score: 750, trend: "↓", place: "other" },
+        { name: "Cary Golf Dads",         detail: "–220 back",     score: 690, trend: "–", place: "other" },
+        { name: "Mulligan's Anonymous",   detail: "–310 back",     score: 600, trend: "–", place: "other" }
+      ]
+    },
+    {
+      letter: "E", name: "Par B", meta: "8 teams · 14 weeks",
+      playoffNote: { label: "⚡ Playoffs", text: "Top 4 advance · Begins Week 15" },
+      teams: [
+        { name: "TrackMan Cowboys",      detail: "+6 this week", score: 945, trend: "↑", place: "gold" },
+        { name: "The Yippers",           detail: "–35 back",     score: 910, trend: "–", place: "silver" },
+        { name: "Downtown Fore",         detail: "–145 back",    score: 800, trend: "↑", place: "bronze" },
+        { name: "Iron Byron Fan Club",   detail: "–225 back",    score: 720, trend: "↓", place: "other" },
+        { name: "Short Game Surgeons",   detail: "–290 back",    score: 655, trend: "–", place: "other" },
+        { name: "Club Soda Bros",        detail: "–365 back",    score: 580, trend: "–", place: "other" }
+      ]
+    }
+  ],
+
+  ticker: [
+    "🏆 <b>Northwood Zaddys</b> surge to lead Albatross Div B with <span class='hi'>1,080 pts</span> after big Week 11",
+    "⚡ <b>Hack Attack</b> and <b>Shanks for the Memories</b> dead-locked at top of Par Div A — tiebreaker Week 12",
+    "🔥 <b>Wah Gwan Delilah</b> surges into Birdie Div C lead after <span class='hi'>+12 this week</span>",
+    "📅 <b>Week 12</b> — Final regular season night before playoffs begin Week 15",
+    "🏌️ Want to join a league? Scan the QR code to register your team for next season",
+    "🍺 <b>Albatross Special:</b> Half-price simulator hour for league members on Wednesday nights"
+  ]
+};
+
+function renderLeague() {
+  document.getElementById('leagueTitle').textContent = LEAGUE.title;
+  document.getElementById('weekNum').textContent = 'WK ' + LEAGUE.week;
+  document.getElementById('weekLabel').textContent = 'of ' + LEAGUE.totalWeeks;
+
+  const placeLabel = (p, i) => {
+    if (p === 'gold' && i === 0) return '1st';
+    if (p === 'gold') return 'T-1';
+    if (p === 'silver') return '2nd';
+    if (p === 'bronze') return '3rd';
+    return `${i+1}th`;
+  };
+
+  const divCols = LEAGUE.divisions.map(div => `
+    <div class="div-col">
+      <div class="div-header">
+        <div class="div-eyebrow">Division ${div.letter}</div>
+        <div class="div-name">${div.name}</div>
+        <div class="div-meta">${div.meta}</div>
+      </div>
+      <div class="team-list">
+        ${div.teams.map((t,i) => `
+          <div class="team-row ${i===0?'leader':''}">
+            <div class="place ${t.place}">${placeLabel(t.place, i)}</div>
+            <div class="team-info">
+              <div class="team-name">${t.name}</div>
+              <div class="team-detail">${t.detail}</div>
+            </div>
+            <div class="team-score">${t.score.toLocaleString()}</div>
+            <div class="trend" style="color:${t.trend==='↑'?'var(--green)':t.trend==='↓'?'var(--red)':'var(--muted)'}">${t.trend}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="playoffs-note">
+        <div class="playoffs-note-label">${div.playoffNote.label}</div>
+        <div class="playoffs-note-text">${div.playoffNote.text}</div>
+      </div>
+    </div>
+  `).join('');
+
+  const sp = LEAGUE.sponsor;
+  const sponsorCol = `
+    <div class="sponsor-col">
+      <div class="sponsor-header">
+        <div class="sponsor-eyebrow">Featured Partner</div>
+        <div class="sponsor-title">Proud Sponsor of the<br>${LEAGUE.title}</div>
+      </div>
+      <div class="sponsor-card">
+        <div class="sponsor-icon">${sp.icon}</div>
+        <div class="sponsor-tag">${sp.tag}</div>
+        <div class="sponsor-name-big">${sp.name}</div>
+        <div class="sponsor-brokerage">${sp.brokerage}</div>
+        <div class="sponsor-divider"></div>
+        <div class="sponsor-phone">${sp.phone}</div>
+        <div class="sponsor-handle">${sp.handle}</div>
+        <div class="sponsor-cta">${sp.cta}</div>
+      </div>
+      <div class="qr-section">
+        <div class="qr-eyebrow">Join Next Season</div>
+        <div class="qr-box">QR</div>
+        <div class="qr-text">Sign Up Your Team</div>
+        <div class="qr-sub">Scan to register · Leagues form every 14 weeks</div>
+      </div>
+      <div class="sponsor-col-footer">
+        <div class="powered-by">Powered by <b>ClubOS</b> · clubhousectv.com</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('mainGrid').innerHTML = divCols + sponsorCol;
+
+  // Ticker
+  const items = [...LEAGUE.ticker, ...LEAGUE.ticker].map(t => `<span class="ticker-item">${t}</span>`).join('');
+  document.getElementById('tickerInner').innerHTML = items;
+}
+
+function updateClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const d = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  document.getElementById('liveTime').textContent = t;
+  document.getElementById('liveDate').textContent = d;
+  document.getElementById('footerTime').textContent = 'Updated ' + d + ' · ' + t;
+}
+
+renderLeague();
+updateClock();
+setInterval(updateClock, 1000);
+</script>
+</body>
+</html>
