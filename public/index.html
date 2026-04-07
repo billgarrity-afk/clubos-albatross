@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="300">
+<title>Albatross Golf — ClubOS Display</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Outfit:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:           #060E09;
+  --bg-mid:       #0B1810;
+  --bg-panel:     #101E14;
+  --bg-card:      #162B1A;
+  --bg-card2:     #1C3320;
+  --green:        #3EC86A;
+  --green-dim:    rgba(62,200,106,0.12);
+  --green-glow:   rgba(62,200,106,0.25);
+  --gold:         #F0B429;
+  --gold-dim:     rgba(240,180,41,0.12);
+  --red:          #E05252;
+  --blue:         #60A5FA;
+  --white:        #F2EFE8;
+  --white-dim:    rgba(242,239,232,0.55);
+  --white-faint:  rgba(242,239,232,0.2);
+  --border:       rgba(62,200,106,0.14);
+  --border-gold:  rgba(240,180,41,0.18);
+  --sep:          rgba(242,239,232,0.07);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  color: var(--white);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 800px 600px at 30% 60%, rgba(62,200,106,0.03) 0%, transparent 70%),
+              radial-gradient(ellipse 600px 400px at 80% 20%, rgba(240,180,41,0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.display-wrapper {
+  display: grid;
+  grid-template-rows: 86px 1fr 64px;
+  height: 1080px;
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px;
+  position: relative;
+  flex-shrink: 0;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--green) 30%, var(--gold) 70%, transparent 100%);
+  opacity: 0.5;
+}
+
+.header-brand { display: flex; align-items: center; gap: 16px; }
+.brand-mark {
+  width: 50px; height: 50px;
+  background: var(--green);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 26px; font-weight: 900;
+  color: var(--bg); letter-spacing: -1px; flex-shrink: 0;
+}
+.brand-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 32px; font-weight: 800;
+  color: var(--white); letter-spacing: 1.5px; line-height: 1; text-transform: uppercase;
+}
+.brand-tagline { font-size: 11px; color: var(--green); letter-spacing: 3px; text-transform: uppercase; margin-top: 3px; font-weight: 500; }
+
+.header-mode { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
+.mode-pill {
+  display: inline-flex; align-items: center; gap: 9px;
+  border: 1px solid var(--green); background: var(--green-dim);
+  padding: 7px 22px; border-radius: 100px;
+}
+.mode-pulse {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+  animation: pulse 1.8s ease-in-out infinite; flex-shrink: 0;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(62,200,106,0.4); }
+  50% { opacity: 0.6; transform: scale(0.8); box-shadow: 0 0 0 4px rgba(62,200,106,0); }
+}
+.mode-label { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--green); white-space: nowrap; }
+.mode-sub { font-size: 11px; color: var(--white-faint); margin-top: 5px; letter-spacing: 1px; }
+
+.header-right { text-align: right; }
+.live-time { font-family: 'DM Mono', monospace; font-size: 38px; color: var(--white); letter-spacing: 2px; line-height: 1; }
+.live-date { font-size: 12px; color: var(--white-dim); letter-spacing: 1px; margin-top: 4px; }
+
+.main-grid { display: grid; grid-template-columns: 1fr 400px; overflow: hidden; }
+
+.hero-zone { display: grid; grid-template-rows: 1fr 120px; border-right: 1px solid var(--border); overflow: hidden; }
+.hero-content { padding: 28px 40px; overflow: hidden; display: flex; flex-direction: column; }
+
+.section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 3.5px; text-transform: uppercase;
+  color: var(--green); margin-bottom: 18px; display: flex; align-items: center; gap: 10px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.mode-panel { display: none; flex-direction: column; gap: 0; flex: 1; }
+.mode-panel.active { display: flex; }
+
+/* Morning: Bay Grid */
+.sim-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; flex: 1; }
+.sim-bay {
+  background: var(--bg-card); border: 1px solid var(--sep); border-radius: 14px;
+  padding: 24px 22px; display: flex; flex-direction: column; gap: 6px;
+  position: relative; overflow: hidden;
+}
+.sim-bay.open { border-color: var(--green); background: rgba(62,200,106,0.06); }
+.sim-bay.open::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--green); box-shadow: 0 0 12px var(--green);
+}
+.sim-bay-num { font-family: 'Barlow Condensed', sans-serif; font-size: 72px; font-weight: 900; line-height: 1; color: var(--white-faint); letter-spacing: -2px; }
+.sim-bay.open .sim-bay-num { color: rgba(62,200,106,0.4); }
+.sim-bay-name { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--white-dim); }
+.sim-bay-tech { font-size: 12px; color: var(--white-faint); letter-spacing: 0.5px; margin-top: 2px; }
+.sim-status-badge {
+  margin-top: auto; display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 600; letter-spacing: 1px;
+  padding: 6px 14px; border-radius: 100px; width: fit-content;
+}
+.sim-status-badge.open-badge { background: rgba(62,200,106,0.15); color: var(--green); border: 1px solid rgba(62,200,106,0.3); }
+.sim-status-badge.occupied-badge { background: rgba(240,180,41,0.1); color: var(--gold); border: 1px solid rgba(240,180,41,0.2); }
+.sim-status-badge .badge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.sim-status-badge.open-badge .badge-dot { background: var(--green); }
+.sim-status-badge.occupied-badge .badge-dot { background: var(--gold); animation: pulse 2s ease-in-out infinite; }
+.sim-until { font-size: 11px; color: var(--white-faint); margin-top: 4px; letter-spacing: 0.5px; }
+
+/* Afternoon */
+.afternoon-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; flex: 1; }
+.featured-special {
+  background: var(--bg-card); border: 1px solid var(--border-gold); border-radius: 16px;
+  padding: 32px; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: hidden;
+}
+.featured-special::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px; background: var(--gold); }
+.featured-badge { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); }
+.featured-name { font-family: 'Barlow Condensed', sans-serif; font-size: 52px; font-weight: 900; color: var(--white); line-height: 1; letter-spacing: 0.5px; }
+.featured-desc { font-size: 16px; color: var(--white-dim); line-height: 1.6; max-width: 480px; }
+.featured-price { margin-top: auto; font-family: 'Barlow Condensed', sans-serif; font-size: 56px; font-weight: 900; color: var(--gold); letter-spacing: -1px; }
+.mini-specials { display: flex; flex-direction: column; gap: 12px; }
+.mini-special-card {
+  background: var(--bg-card); border: 1px solid var(--sep); border-radius: 12px;
+  padding: 16px 20px; flex: 1; display: flex; align-items: center; gap: 16px; position: relative;
+}
+.mini-special-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px; background: var(--green); }
+.mini-special-icon { font-size: 24px; flex-shrink: 0; }
+.mini-special-name { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--white); }
+.mini-special-desc { font-size: 12px; color: var(--white-dim); margin-top: 2px; }
+.mini-special-price { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 800; color: var(--gold); margin-left: auto; }
+
+/* Evening: League */
+.league-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1; }
+.division-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.division-header { padding: 14px 22px; background: rgba(62,200,106,0.08); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.division-name { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--green); }
+.division-meta { font-size: 11px; color: var(--white-dim); letter-spacing: 1px; }
+.team-row { display: grid; grid-template-columns: 32px 1fr 70px 44px; padding: 11px 22px; align-items: center; gap: 8px; border-bottom: 1px solid var(--sep); }
+.team-row:last-child { border-bottom: none; }
+.team-row.leader { background: rgba(240,180,41,0.04); }
+.team-rank { font-family: 'DM Mono', monospace; font-size: 14px; color: var(--white-dim); font-weight: 500; }
+.team-rank.r1 { color: var(--gold); }
+.team-rank.r2 { color: #B0BEC5; }
+.team-rank.r3 { color: #CD7F32; }
+.team-name { font-size: 15px; color: var(--white); font-weight: 500; }
+.team-pts { font-family: 'DM Mono', monospace; font-size: 15px; color: var(--white); text-align: right; }
+.team-change { font-size: 12px; text-align: center; }
+.team-change.up { color: var(--green); }
+.team-change.dn { color: var(--red); }
+.team-change.eq { color: var(--white-faint); }
+
+/* Specials Bar */
+.specials-bar {
+  background: var(--bg-mid); border-top: 1px solid var(--border-gold);
+  padding: 14px 40px; display: flex; gap: 16px; align-items: stretch;
+}
+.special-card {
+  flex: 1; background: var(--bg-card2); border: 1px solid var(--border-gold);
+  border-radius: 10px; padding: 12px 18px; display: flex; align-items: center; gap: 16px;
+  position: relative; overflow: hidden;
+}
+.special-card.hidden { display: none; }
+.special-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--gold); border-radius: 3px 0 0 3px; }
+.sold-out-overlay { display: none; position: absolute; inset: 0; background: rgba(6,14,9,0.7); align-items: center; justify-content: center; border-radius: 10px; }
+.sold-out-overlay.show { display: flex; }
+.sold-out-text { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; letter-spacing: 3px; color: var(--red); border: 2px solid var(--red); padding: 6px 18px; border-radius: 4px; transform: rotate(-8deg); }
+.special-badge-small { font-size: 9px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 3px; }
+.special-name-small { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 800; color: var(--white); letter-spacing: 0.5px; }
+.special-desc-small { font-size: 12px; color: var(--white-dim); margin-top: 2px; line-height: 1.3; }
+.special-price-small { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 900; color: var(--gold); margin-left: auto; flex-shrink: 0; }
+
+/* Right Column */
+.right-col { display: grid; grid-template-rows: 1fr 1fr; background: var(--bg-mid); overflow: hidden; }
+.social-panel { padding: 20px 22px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.panel-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.panel-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--green); }
+.ig-pill { display: inline-flex; align-items: center; gap: 5px; background: rgba(225,48,108,0.12); border: 1px solid rgba(225,48,108,0.25); border-radius: 100px; padding: 3px 10px; font-size: 10px; font-weight: 600; color: #E1306C; letter-spacing: 1px; margin-left: auto; }
+.social-posts { display: flex; flex-direction: column; gap: 10px; flex: 1; overflow: hidden; }
+.social-post { background: var(--bg-card); border: 1px solid var(--sep); border-radius: 10px; padding: 12px; display: flex; gap: 12px; flex: 1; overflow: hidden; }
+.post-thumb { width: 68px; border-radius: 8px; background: var(--bg-card2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 30px; flex-shrink: 0; }
+.post-body { flex: 1; overflow: hidden; }
+.post-handle { font-size: 11px; font-weight: 600; color: var(--green); margin-bottom: 5px; }
+.post-caption { font-size: 12px; color: var(--white-dim); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.post-meta { display: flex; gap: 12px; margin-top: 7px; }
+.post-stat { font-size: 11px; color: var(--white-faint); display: flex; align-items: center; gap: 4px; }
+
+.schedule-panel { padding: 18px 22px; display: flex; flex-direction: column; overflow: hidden; }
+.schedule-list { display: flex; flex-direction: column; gap: 7px; flex: 1; overflow: hidden; }
+.sched-item { display: flex; align-items: center; gap: 12px; background: var(--bg-card); border-radius: 8px; padding: 9px 14px; border-left: 3px solid transparent; flex-shrink: 0; }
+.sched-item.now { border-left-color: var(--green); background: rgba(62,200,106,0.06); }
+.sched-item.next { border-left-color: var(--gold); }
+.sched-item.done { opacity: 0.35; }
+.sched-time { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--white); min-width: 66px; flex-shrink: 0; }
+.sched-event { font-size: 13px; color: var(--white); font-weight: 500; flex: 1; }
+.sched-type { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; }
+.sched-type.league { background: rgba(62,200,106,0.12); color: var(--green); }
+.sched-type.event { background: rgba(240,180,41,0.1); color: var(--gold); }
+.sched-type.games { background: rgba(96,165,250,0.1); color: var(--blue); }
+.sched-type.normal { background: var(--sep); color: var(--white-dim); }
+
+/* Footer */
+.footer { background: var(--bg-panel); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 48px; gap: 24px; flex-shrink: 0; }
+.sponsor-block { flex-shrink: 0; }
+.sponsor-label { font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--white-faint); }
+.sponsor-name { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; color: var(--gold); letter-spacing: 0.5px; }
+.sponsor-tagline { font-size: 11px; color: var(--white-faint); }
+.ticker-wrap { flex: 1; overflow: hidden; height: 22px; position: relative; }
+.ticker-track { position: absolute; white-space: nowrap; animation: ticker 35s linear infinite; font-size: 13px; color: var(--white-dim); letter-spacing: 0.5px; line-height: 22px; }
+.ticker-track .hl { color: var(--green); font-weight: 600; }
+@keyframes ticker { from { transform: translateX(1920px); } to { transform: translateX(-100%); } }
+.powered-by { font-size: 11px; color: var(--white-faint); text-align: right; flex-shrink: 0; letter-spacing: 0.5px; line-height: 1.5; }
+.powered-by b { color: var(--green); font-weight: 600; }
+
+/* AI Overlay */
+.ai-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(12px); z-index: 2000; display: none; align-items: center; justify-content: center; }
+.ai-overlay.open { display: flex; }
+.ai-card { background: var(--bg-panel); border: 1px solid var(--green); border-radius: 20px; width: 740px; padding: 44px; box-shadow: 0 0 100px rgba(62,200,106,0.15), 0 32px 64px rgba(0,0,0,0.5); }
+.ai-card-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+.ai-icon { width: 52px; height: 52px; background: var(--green); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+.ai-card-title { font-family: 'Barlow Condensed', sans-serif; font-size: 30px; font-weight: 800; color: var(--white); letter-spacing: 0.5px; line-height: 1; }
+.ai-card-sub { font-size: 13px; color: var(--white-dim); margin-top: 4px; }
+.ai-examples { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.ai-example { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 13px; font-size: 12px; color: var(--white-dim); cursor: pointer; transition: all 0.15s; }
+.ai-example:hover { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.ai-input-row { display: flex; gap: 12px; margin-bottom: 14px; }
+.ai-input { flex: 1; background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 12px; padding: 15px 20px; font-size: 17px; color: var(--white); font-family: 'Outfit', sans-serif; outline: none; transition: border-color 0.2s; }
+.ai-input:focus { border-color: var(--green); }
+.ai-input::placeholder { color: var(--white-faint); font-size: 15px; }
+.ai-btn { background: var(--green); color: var(--bg); border: none; border-radius: 12px; padding: 15px 28px; font-size: 15px; font-weight: 700; font-family: 'Outfit', sans-serif; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
+.ai-btn:hover { opacity: 0.88; }
+.ai-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.ai-response { background: var(--bg-card); border: 1px solid var(--sep); border-radius: 10px; padding: 16px 20px; font-size: 14px; color: var(--white-dim); line-height: 1.6; min-height: 52px; display: flex; align-items: center; gap: 10px; }
+.ai-response.success { border-color: var(--green); color: var(--green); }
+.ai-response.error { border-color: var(--red); color: var(--red); }
+.ai-footer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+.ai-shortcut { font-size: 12px; color: var(--white-faint); }
+.ai-shortcut kbd { background: var(--bg-card2); border: 1px solid var(--sep); border-radius: 4px; padding: 2px 7px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--white-dim); }
+.ai-close { background: transparent; border: 1px solid var(--sep); color: var(--white-dim); border-radius: 8px; padding: 8px 18px; font-size: 13px; cursor: pointer; font-family: 'Outfit', sans-serif; transition: all 0.2s; }
+.ai-close:hover { border-color: var(--white-dim); color: var(--white); }
+.mgr-trigger { position: fixed; bottom: 72px; right: 14px; width: 36px; height: 36px; background: rgba(62,200,106,0.08); border: 1px solid rgba(62,200,106,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; z-index: 100; opacity: 0.35; transition: opacity 0.2s; }
+.mgr-trigger:hover { opacity: 1; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+.hero-zone { animation: fadeUp 0.6s ease 0.1s both; }
+.right-col { animation: fadeUp 0.6s ease 0.2s both; }
+.footer { animation: fadeUp 0.4s ease 0.3s both; }
+</style>
+</head>
+<body>
+<div class="display-wrapper">
+
+  <header class="header">
+    <div class="header-brand">
+      <div class="brand-mark">AG</div>
+      <div>
+        <div class="brand-name">Albatross Golf</div>
+        <div class="brand-tagline">Indoor Golf · Cary, NC</div>
+      </div>
+    </div>
+    <div class="header-mode">
+      <div class="mode-pill">
+        <div class="mode-pulse"></div>
+        <div class="mode-label" id="modePillLabel">Open for Play</div>
+      </div>
+      <div class="mode-sub" id="modeSub">Walk-ins welcome · Book online</div>
+    </div>
+    <div class="header-right">
+      <div class="live-time" id="liveTime">—</div>
+      <div class="live-date" id="liveDate">—</div>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <div class="hero-zone">
+      <div class="hero-content">
+
+        <div class="mode-panel" id="mode-morning">
+          <div class="section-label">Bay Availability</div>
+          <div class="sim-grid" id="simGrid"></div>
+        </div>
+
+        <div class="mode-panel" id="mode-afternoon">
+          <div class="section-label">Midday Specials</div>
+          <div class="afternoon-grid" id="afternoonGrid"></div>
+        </div>
+
+        <div class="mode-panel" id="mode-evening">
+          <div class="section-label">League Standings — Tonight</div>
+          <div class="league-grid" id="leagueGrid"></div>
+        </div>
+
+        <div class="mode-panel" id="mode-late">
+          <div class="section-label">19th Hole — Late Night</div>
+          <div style="display:flex;align-items:center;justify-content:center;flex:1;flex-direction:column;gap:16px;">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:64px;font-weight:900;color:var(--green);letter-spacing:2px;">STILL OPEN</div>
+            <div style="font-size:18px;color:var(--white-dim);letter-spacing:1px;">Bays available · Bar is open · Walk-ins welcome</div>
+          </div>
+        </div>
+
+      </div>
+      <div class="specials-bar" id="specialsBar"></div>
+    </div>
+
+    <div class="right-col">
+      <div class="social-panel">
+        <div class="panel-header">
+          <div class="panel-eyebrow">Latest from Social</div>
+          <div class="ig-pill">📸 @albatrossgolfcary</div>
+        </div>
+        <div class="social-posts" id="socialPosts"></div>
+      </div>
+      <div class="schedule-panel">
+        <div class="panel-header">
+          <div class="panel-eyebrow">Today's Schedule</div>
+        </div>
+        <div class="schedule-list" id="scheduleList"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="sponsor-block">
+      <div class="sponsor-label">Presenting Sponsor</div>
+      <div class="sponsor-name" id="sponsorName">—</div>
+      <div class="sponsor-tagline" id="sponsorTagline">—</div>
+    </div>
+    <div class="ticker-wrap">
+      <div class="ticker-track" id="tickerTrack"></div>
+    </div>
+    <div class="powered-by">Powered by <b>ClubOS</b><br><span style="font-size:10px;">clubhousectv.com</span></div>
+  </footer>
+</div>
+
+<div class="ai-overlay" id="aiOverlay">
+  <div class="ai-card">
+    <div class="ai-card-header">
+      <div class="ai-icon">🎙️</div>
+      <div>
+        <div class="ai-card-title">ClubOS Content Manager</div>
+        <div class="ai-card-sub">Tell the display what to change — in plain English.</div>
+      </div>
+    </div>
+    <div class="ai-examples" id="aiExamples"></div>
+    <div class="ai-input-row">
+      <input class="ai-input" id="aiInput" type="text" placeholder="e.g. Mark the Birdie Burger as sold out...">
+      <button class="ai-btn" id="aiSubmit" onclick="handleAICommand()">Update Display</button>
+    </div>
+    <div class="ai-response" id="aiResponse">Type a command above and the display will update instantly.</div>
+    <div class="ai-footer-row">
+      <div class="ai-shortcut">Press <kbd>M</kbd> to open · <kbd>Esc</kbd> to close</div>
+      <button class="ai-close" onclick="closeAIManager()">Close</button>
+    </div>
+  </div>
+</div>
+<div class="mgr-trigger" onclick="openAIManager()" title="Content Manager (M)">⚙️</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CLUB DATA — Update this block for each venue
+// ═══════════════════════════════════════════
+const DATA = {
+  venue: { name: "Albatross Golf", handle: "@albatrossgolfcary", location: "Cary, NC" },
+  sponsor: { name: "Perch", tagline: "Real Estate · Triangle Area" },
+  ticker: "Walk-ins welcome on all bays · Book online at albatrossgolfcary.com · League sign-ups now open for Summer Season · Ask about private events & corporate packages",
+
+  simulators: [
+    { num: 1, name: "Bay 1", tech: "Full Swing KIT · 85+ Courses", status: "open", until: "" },
+    { num: 2, name: "Bay 2", tech: "Full Swing KIT · 85+ Courses", status: "occupied", until: "Until 11:30 AM" },
+    { num: 3, name: "Bay 3", tech: "Full Swing KIT · 85+ Courses", status: "open", until: "" },
+    { num: 4, name: "Bay 4", tech: "Full Swing KIT · 85+ Courses", status: "occupied", until: "Until 12:00 PM" }
+  ],
+
+  specials: [
+    { id: "happyhour",     badge: "Happy Hour",     name: "Draft Beers",   desc: "All drafts on tap · Mon–Fri 4–6 PM",            price: "$5",  active: true, soldOut: false },
+    { id: "kitchenspecial",badge: "Kitchen Special", name: "Birdie Burger", desc: "8oz wagyu, truffle aioli, hand-cut fries",       price: "$16", active: true, soldOut: false },
+    { id: "drinkspecial",  badge: "Drink Special",   name: "The Double Bogey", desc: "Double shot old fashioned · House recipe",   price: "$14", active: true, soldOut: false }
+  ],
+
+  afternoonFeatured: { badge: "Today's Feature", name: "Birdie Burger", desc: "8oz wagyu blend, truffle aioli, caramelized onions, brioche bun. Served with hand-cut fries.", price: "$16" },
+  afternoonMinis: [
+    { icon: "🍺", name: "Draft Beers", desc: "All 12 taps · Happy Hour 4–6pm", price: "$5" },
+    { icon: "🥃", name: "Double Bogey", desc: "House old fashioned, double pour", price: "$14" }
+  ],
+
+  league: [
+    { name: "Division A — Condor", round: "Week 11 · Winter Season",
+      teams: [
+        { name: "Beef Boyz", pts: 1035, change: "up" },
+        { name: "OCcasional Birdies", pts: 1020, change: "eq" },
+        { name: "The Schlongest Drive", pts: 880, change: "dn" },
+        { name: "Fore Scores & 7 Beers", pts: 805, change: "eq" },
+        { name: "Putt Pirates", pts: 740, change: "dn" }
+      ]
+    },
+    { name: "Division B — Albatross", round: "Week 11 · Winter Season",
+      teams: [
+        { name: "Northwood Zaddys", pts: 1080, change: "up" },
+        { name: "Fairway to Heaven", pts: 1035, change: "eq" },
+        { name: "The Rough Riders", pts: 890, change: "up" },
+        { name: "Bogey Men", pts: 820, change: "eq" },
+        { name: "Iron Maidens", pts: 750, change: "dn" }
+      ]
+    }
+  ],
+
+  social: [
+    { emoji: "⛳", caption: "League night in full swing! 🔥 Bays 1–4 completely booked. Division B is CLOSE — only 45 points separating the top 2. Who's taking home the trophy? #AlbatrossGolf #IndoorGolf", likes: 84, comments: 12, time: "2h ago" },
+    { emoji: "🍺", caption: "This week's special: The Double Bogey 🥃 Double pour old fashioned, house recipe. Trust us, you need one after that last shot. #AlbatrossGolf #Cary", likes: 61, comments: 7, time: "1d ago" }
+  ],
+
+  schedule: [
+    { time: "10:00 AM", event: "Open Play Begins", type: "normal", status: "done" },
+    { time: "12:00 PM", event: "Lunch Special: Birdie Burger", type: "event", status: "done" },
+    { time: "4:00 PM",  event: "Happy Hour Starts", type: "event", status: "next" },
+    { time: "5:30 PM",  event: "Division A League Night", type: "league", status: "next" },
+    { time: "7:00 PM",  event: "Division B League Night", type: "league", status: "next" },
+    { time: "8:30 PM",  event: "ClubOS Games — Pick'em", type: "games", status: "next" },
+    { time: "10:00 PM", event: "19th Hole — Late Night", type: "normal", status: "next" }
+  ],
+
+  aiExamples: [
+    "Remove the happy hour special",
+    "Mark the Birdie Burger as sold out",
+    "Change the footer sponsor to Genesis of Cary",
+    "Add: Kitchen closes at 9pm",
+    "The Double Bogey is $12 tonight"
+  ]
+};
+
+// ═══════════════════════════════════════════
+// MODE
+// ═══════════════════════════════════════════
+function getMode() {
+  const h = new Date().getHours();
+  if (h >= 6  && h < 12) return "morning";
+  if (h >= 12 && h < 17) return "afternoon";
+  if (h >= 17 && h < 22) return "evening";
+  return "late";
+}
+const MODE_CONFIG = {
+  morning:   { label: "Open for Play",      sub: "Walk-ins welcome · Book a bay today" },
+  afternoon: { label: "Midday at the Range", sub: "Specials · Open bays available" },
+  evening:   { label: "🏆 League Night",     sub: "Division A & B in play tonight" },
+  late:      { label: "19th Hole",           sub: "Late night · Bays still open" }
+};
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('liveTime').textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  document.getElementById('liveDate').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+function renderMode() {
+  const mode = getMode();
+  const cfg = MODE_CONFIG[mode];
+  document.getElementById('modePillLabel').textContent = cfg.label;
+  document.getElementById('modeSub').textContent = cfg.sub;
+  document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('mode-' + mode).classList.add('active');
+}
+
+function renderSimulators() {
+  document.getElementById('simGrid').innerHTML = DATA.simulators.map(bay => `
+    <div class="sim-bay ${bay.status}">
+      <div class="sim-bay-num">${bay.num}</div>
+      <div class="sim-bay-name">${bay.name}</div>
+      <div class="sim-bay-tech">${bay.tech}</div>
+      <div class="sim-status-badge ${bay.status === 'open' ? 'open-badge' : 'occupied-badge'}">
+        <div class="badge-dot"></div>
+        ${bay.status === 'open' ? 'Available Now' : 'In Use'}
+      </div>
+      ${bay.until ? `<div class="sim-until">${bay.until}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function renderAfternoon() {
+  const f = DATA.afternoonFeatured;
+  document.getElementById('afternoonGrid').innerHTML = `
+    <div class="featured-special">
+      <div class="featured-badge">✦ ${f.badge}</div>
+      <div class="featured-name">${f.name}</div>
+      <div class="featured-desc">${f.desc}</div>
+      <div class="featured-price">${f.price}</div>
+    </div>
+    <div class="mini-specials">
+      ${DATA.afternoonMinis.map(s => `
+        <div class="mini-special-card">
+          <div class="mini-special-icon">${s.icon}</div>
+          <div class="mini-special-info">
+            <div class="mini-special-name">${s.name}</div>
+            <div class="mini-special-desc">${s.desc}</div>
+          </div>
+          <div class="mini-special-price">${s.price}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderLeague() {
+  const rankClass = i => i===0?'r1':i===1?'r2':i===2?'r3':'';
+  const rankSymbol = i => i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
+  document.getElementById('leagueGrid').innerHTML = DATA.league.map(div => `
+    <div class="division-card">
+      <div class="division-header">
+        <div class="division-name">${div.name}</div>
+        <div class="division-meta">${div.round}</div>
+      </div>
+      ${div.teams.map((t,i) => `
+        <div class="team-row ${i===0?'leader':''}">
+          <div class="team-rank ${rankClass(i)}">${rankSymbol(i)}</div>
+          <div class="team-name">${t.name}</div>
+          <div class="team-pts">${t.pts.toLocaleString()}</div>
+          <div class="team-change ${t.change}">${t.change==='up'?'▲':t.change==='dn'?'▼':'—'}</div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function renderSpecials() {
+  document.getElementById('specialsBar').innerHTML = DATA.specials.map((s,i) => `
+    <div class="special-card ${s.active?'':'hidden'}" id="special-${i}">
+      <div class="sold-out-overlay ${s.soldOut?'show':''}"><div class="sold-out-text">SOLD OUT</div></div>
+      <div class="special-info">
+        <div class="special-badge-small">✦ ${s.badge}</div>
+        <div class="special-name-small">${s.name}</div>
+        <div class="special-desc-small">${s.desc}</div>
+      </div>
+      <div class="special-price-small">${s.price}</div>
+    </div>
+  `).join('');
+}
+
+function renderSocial() {
+  document.getElementById('socialPosts').innerHTML = DATA.social.map(p => `
+    <div class="social-post">
+      <div class="post-thumb">${p.emoji}</div>
+      <div class="post-body">
+        <div class="post-handle">@albatrossgolfcary</div>
+        <div class="post-caption">${p.caption}</div>
+        <div class="post-meta">
+          <div class="post-stat">❤️ ${p.likes}</div>
+          <div class="post-stat">💬 ${p.comments}</div>
+          <div class="post-stat">🕐 ${p.time}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderSchedule() {
+  document.getElementById('scheduleList').innerHTML = DATA.schedule.map(s => `
+    <div class="sched-item ${s.status==='now'?'now':s.status==='next'?'next':'done'}">
+      <div class="sched-time">${s.time}</div>
+      <div class="sched-event">${s.event}</div>
+      <div class="sched-type ${s.type}">${s.type.toUpperCase()}</div>
+    </div>
+  `).join('');
+}
+
+function renderFooter() {
+  document.getElementById('sponsorName').textContent = DATA.sponsor.name;
+  document.getElementById('sponsorTagline').textContent = DATA.sponsor.tagline;
+  document.getElementById('tickerTrack').innerHTML =
+    `<span class="hl">ALBATROSS GOLF — CARY, NC</span> &nbsp;·&nbsp; ${DATA.ticker} &nbsp;·&nbsp; <span class="hl">ALBATROSS GOLF — CARY, NC</span> &nbsp;·&nbsp; ${DATA.ticker}`;
+}
+
+// AI Manager
+function openAIManager() { document.getElementById('aiOverlay').classList.add('open'); setTimeout(()=>document.getElementById('aiInput').focus(),100); }
+function closeAIManager() {
+  document.getElementById('aiOverlay').classList.remove('open');
+  document.getElementById('aiInput').value = '';
+  document.getElementById('aiResponse').className = 'ai-response';
+  document.getElementById('aiResponse').textContent = 'Type a command above and the display will update instantly.';
+}
+document.getElementById('aiExamples').innerHTML = DATA.aiExamples.map(ex => `<div class="ai-example" onclick="document.getElementById('aiInput').value=this.textContent;document.getElementById('aiInput').focus()">${ex}</div>`).join('');
+
+async function handleAICommand() {
+  const input = document.getElementById('aiInput');
+  const btn = document.getElementById('aiSubmit');
+  const resp = document.getElementById('aiResponse');
+  const command = input.value.trim();
+  if (!command) return;
+  btn.disabled = true; btn.textContent = 'Thinking...';
+  resp.className = 'ai-response'; resp.textContent = '⏳ Processing...';
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514", max_tokens: 1000,
+        system: `You manage the TV display at Albatross Golf in Cary, NC. Respond ONLY with a JSON object, no markdown.\nCurrent data: ${JSON.stringify(DATA)}\n\nActions: remove_special (specialId, message), sold_out (specialId, message), update_price (specialId, newPrice, message), update_ticker (value, message), add_schedule (item, message), update_sponsor (name, tagline, message), no_op (message)`,
+        messages: [{ role: "user", content: command }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.find(b=>b.type==='text')?.text||'{}';
+    const result = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    applyAIAction(result);
+    resp.className = `ai-response ${result.action==='no_op'?'':'success'}`;
+    resp.textContent = result.message || '✅ Done.';
+    input.value = '';
+  } catch(e) {
+    resp.className = 'ai-response error';
+    resp.textContent = '❌ Error. Check connection.';
+  } finally { btn.disabled = false; btn.textContent = 'Update Display'; }
+}
+
+function applyAIAction(r) {
+  const s = r.specialId ? DATA.specials.find(x=>x.id===r.specialId) : null;
+  if (r.action==='remove_special' && s) { s.active=false; renderSpecials(); }
+  else if (r.action==='restore_special' && s) { s.active=true; s.soldOut=false; renderSpecials(); }
+  else if (r.action==='sold_out' && s) { s.soldOut=true; renderSpecials(); }
+  else if (r.action==='update_price' && s) { s.price=r.newPrice; renderSpecials(); }
+  else if (r.action==='update_ticker') { DATA.ticker=r.value; renderFooter(); }
+  else if (r.action==='add_schedule') { DATA.schedule.push(r.item); renderSchedule(); }
+  else if (r.action==='update_sponsor') { DATA.sponsor.name=r.name; DATA.sponsor.tagline=r.tagline||''; renderFooter(); }
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.key==='m'||e.key==='M') && document.activeElement.tagName!=='INPUT') openAIManager();
+  if (e.key==='Escape') closeAIManager();
+  if (e.key==='Enter' && document.getElementById('aiOverlay').classList.contains('open') && document.activeElement===document.getElementById('aiInput')) handleAICommand();
+});
+
+function init() {
+  renderMode(); renderSimulators(); renderAfternoon(); renderLeague();
+  renderSpecials(); renderSocial(); renderSchedule(); renderFooter();
+  updateClock(); setInterval(updateClock, 1000);
+}
+init();
+</script>
+</body>
+</html>
