@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#080D0A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Fan Wall — Add Your Photo</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080D0A;
+    --bg-card:  #0E1610;
+    --green:    #27C95A;
+    --green-dk: #1A8F3D;
+    --gold:     #F0B429;
+    --white:    #F0EDE6;
+    --white-dim: rgba(240,237,230,0.55);
+    --separator: rgba(240,237,230,0.1);
+    --font-display: 'Unbounded', sans-serif;
+    --font-body:    'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--white);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+  }
+
+  /* subtle gradient bg */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 100% 50% at 50% 0%, rgba(39,201,90,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(240,180,41,0.05) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  /* ══ SCREENS ════════════════════════════════════════════ */
+  .screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 24px 40px;
+    position: relative;
+  }
+  .screen.hidden { display: none; }
+
+  /* ══ HEADER ════════════════════════════════════════════ */
+  .top-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 0 24px;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .club-name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .page-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--white);
+    letter-spacing: 1px;
+  }
+  .page-sub {
+    font-size: 14px;
+    color: var(--white-dim);
+    text-align: center;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  /* ══ UPLOAD AREA ═══════════════════════════════════════ */
+  .upload-zone {
+    width: 100%;
+    max-width: 400px;
+    margin: 8px auto 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Photo picker */
+  .photo-picker {
+    width: 100%;
+    aspect-ratio: 4/3;
+    border-radius: 16px;
+    border: 2px dashed rgba(39,201,90,0.35);
+    background: var(--bg-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .photo-picker:active {
+    border-color: var(--green);
+    background: rgba(39,201,90,0.05);
+  }
+  .photo-picker.has-photo {
+    border-color: var(--green);
+    border-style: solid;
+  }
+
+  .picker-icon { font-size: 48px; }
+  .picker-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--green);
+    letter-spacing: 0.3px;
+  }
+  .picker-sub {
+    font-size: 12px;
+    color: var(--white-dim);
+  }
+
+  .preview-img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: 14px;
+    display: none;
+  }
+  .photo-picker.has-photo .preview-img { display: block; }
+  .photo-picker.has-photo .picker-icon,
+  .photo-picker.has-photo .picker-label,
+  .photo-picker.has-photo .picker-sub { display: none; }
+
+  .change-photo-btn {
+    position: absolute;
+    bottom: 10px; right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: var(--white);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: none;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+  }
+  .photo-picker.has-photo .change-photo-btn { display: block; }
+
+  /* Caption overlay on photo preview */
+  .caption-preview-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.85));
+    padding: 32px 14px 36px;
+    pointer-events: none;
+  }
+  .caption-preview-text {
+    font-size: 15px;
+    font-style: italic;
+    color: rgba(240,237,230,0.9);
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .caption-char-count {
+    font-size: 11px;
+    color: rgba(240,237,230,0.3);
+    text-align: right;
+    margin-top: 4px;
+    font-family: var(--font-body);
+  }
+
+  /* hidden file input */
+  #fileInput { display: none; }
+
+  /* ══ NAME FIELD ════════════════════════════════════════ */
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field-label {
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 500;
+  }
+  .field-input {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--separator);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--white);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .field-input::placeholder { color: rgba(240,237,230,0.25); }
+  .field-input:focus { border-color: var(--green); }
+
+  /* ══ SUBMIT BUTTON ══════════════════════════════════════ */
+  .submit-btn {
+    width: 100%;
+    padding: 18px;
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+    -webkit-appearance: none;
+  }
+  .submit-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .submit-btn:not(:disabled):active {
+    transform: scale(0.98);
+  }
+
+  .btn-loading {
+    display: none;
+    position: absolute; inset: 0;
+    background: var(--green);
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .btn-loading.show { display: flex; }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(0,0,0,0.3);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ══ PROGRESS BAR ═══════════════════════════════════════ */
+  .progress-bar-wrap {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    display: none;
+  }
+  .progress-bar-wrap.show { display: block; }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green-dk), var(--green));
+    width: 0%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .error-msg {
+    font-size: 13px;
+    color: #FF6B6B;
+    text-align: center;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  /* ══ SPONSOR FOOTER ════════════════════════════════════ */
+  .sponsor-footer {
+    margin-top: 28px;
+    text-align: center;
+    width: 100%;
+  }
+  .sponsor-eyebrow {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(240,237,230,0.25);
+    margin-bottom: 4px;
+  }
+  .sponsor-name {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  /* ══ SUCCESS SCREEN ════════════════════════════════════ */
+  #successScreen {
+    min-height: 100vh;
+    background: var(--bg);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    text-align: center;
+  }
+  #successScreen.show { display: flex; }
+
+  .success-icon {
+    font-size: 72px;
+    margin-bottom: 24px;
+    animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.4); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  .success-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--green);
+    margin-bottom: 10px;
+    animation: fadeUp 0.5s ease 0.2s both;
+  }
+  .success-msg {
+    font-size: 16px;
+    color: var(--white-dim);
+    line-height: 1.6;
+    max-width: 300px;
+    animation: fadeUp 0.5s ease 0.3s both;
+  }
+  .success-preview {
+    width: 200px;
+    height: 200px;
+    border-radius: 16px;
+    object-fit: cover;
+    margin: 28px auto 0;
+    border: 3px solid var(--green);
+    box-shadow: 0 0 30px rgba(39,201,90,0.3);
+    animation: fadeUp 0.5s ease 0.15s both;
+    display: none;
+  }
+  .another-btn {
+    margin-top: 32px;
+    padding: 14px 32px;
+    background: transparent;
+    border: 2px solid var(--green);
+    color: var(--green);
+    border-radius: 10px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    animation: fadeUp 0.5s ease 0.4s both;
+  }
+  .success-look {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--white-dim);
+    animation: fadeUp 0.5s ease 0.5s both;
+  }
+  .success-look span {
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ UPLOAD SCREEN ════════════════════════════════════ -->
+<div class="screen" id="uploadScreen">
+  <div class="top-bar">
+    <div class="club-name" id="clubNameDisplay">Albatross</div>
+    <div class="page-title">Fan Wall 📸</div>
+    <div class="page-sub" id="eventNameDisplay">Your photo goes live on the big screen in seconds</div>
+  </div>
+
+  <div class="upload-zone">
+
+    <!-- Photo Picker -->
+    <div class="photo-picker" id="photoPicker" onclick="triggerPicker()">
+      <div class="picker-icon">📷</div>
+      <div class="picker-label">Tap to Add Photo</div>
+      <div class="picker-sub">Camera or photo library</div>
+      <img class="preview-img" id="previewImg" alt="Your photo">
+      <!-- Caption overlay preview on the photo -->
+      <div class="caption-preview-overlay" id="captionOverlay" style="display:none;">
+        <div class="caption-preview-text" id="captionPreviewText"></div>
+      </div>
+      <button class="change-photo-btn" onclick="event.stopPropagation(); triggerPicker()">Change</button>
+    </div>
+
+    <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="onFileSelected(event)">
+
+    <!-- Name field -->
+    <div class="field-group">
+      <div class="field-label">Your Name <span style="opacity:0.4;font-size:10px;letter-spacing:0.5px;text-transform:none;">(optional)</span></div>
+      <input class="field-input" type="text" id="nameInput" placeholder="e.g. D. Harrington" maxlength="40" autocomplete="off">
+    </div>
+
+    <!-- Caption field -->
+    <div class="field-group" id="captionGroup">
+      <div class="field-label">Add a Caption <span style="opacity:0.4;font-size:10px;letter-spacing:0.5px;text-transform:none;">(optional — shows on screen)</span></div>
+      <input class="field-input" type="text" id="captionInput"
+             placeholder="e.g. Best night of the year!"
+             maxlength="60" autocomplete="off"
+             oninput="updateCaptionPreview(this.value)">
+      <div class="caption-char-count" id="charCount">0 / 60</div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-bar-wrap" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- Submit -->
+    <button class="submit-btn" id="submitBtn" disabled onclick="submitPhoto()">
+      Add to Fan Wall
+      <div class="btn-loading" id="btnLoading">
+        <div class="spinner"></div>
+        Uploading…
+      </div>
+    </button>
+
+  </div>
+
+  <div class="sponsor-footer">
+    <div class="sponsor-eyebrow">Presented by</div>
+    <div class="sponsor-name" id="sponsorDisplay">Perch</div>
+  </div>
+</div>
+
+<!-- ══ SUCCESS SCREEN ════════════════════════════════════ -->
+<div id="successScreen">
+  <div class="success-icon">🎉</div>
+  <img class="success-preview" id="successPreview" alt="Your photo">
+  <div class="success-title">You're on the wall!</div>
+  <div class="success-msg">Look up at the big screen — your photo is live for everyone to see.</div>
+  <div class="success-look">Check the screen for <span id="memberNameDisplay">your photo</span></div>
+  <button class="another-btn" onclick="resetForm()">Add Another Photo</button>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIG — Must match fanwall-display.html
+// ════════════════════════════════════════════════════════════
+const CONFIG = {
+  SUPABASE_URL:      'https://ykfvwqewnfnibpzytspn.supabase.co',
+  SUPABASE_ANON_KEY: 'YOUR_ANON_KEY_HERE',
+  BUCKET:            'fanwall-photos',
+  CLUB_NAME:         'Albatross',
+  EVENT_NAME:        'Your photo goes live on the big screen in seconds',
+  SPONSOR_NAME:      'Perch',
+  MAX_SIZE_MB:       5,
+  COMPRESS_MAX_PX:   1600,  // max dimension after compression
+  COMPRESS_QUALITY:  0.82,
+};
+
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+let selectedFile = null;
+let selectedPreviewURL = null;
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+document.getElementById('clubNameDisplay').textContent  = CONFIG.CLUB_NAME;
+document.getElementById('eventNameDisplay').textContent = CONFIG.EVENT_NAME;
+document.getElementById('sponsorDisplay').textContent   = CONFIG.SPONSOR_NAME;
+
+// ════════════════════════════════════════════════════════════
+// FILE SELECTION
+// ════════════════════════════════════════════════════════════
+function triggerPicker() {
+  document.getElementById('fileInput').click();
+}
+
+function onFileSelected(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  hideError();
+  selectedFile = file;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    selectedPreviewURL = ev.target.result;
+    document.getElementById('previewImg').src = selectedPreviewURL;
+    document.getElementById('photoPicker').classList.add('has-photo');
+    document.getElementById('submitBtn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ════════════════════════════════════════════════════════════
+// COMPRESS (canvas resize)
+// ════════════════════════════════════════════════════════════
+async function compressImage(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      const max = CONFIG.COMPRESS_MAX_PX;
+
+      if (width > max || height > max) {
+        if (width > height) { height = Math.round(height * max / width); width = max; }
+        else { width = Math.round(width * max / height); height = max; }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => resolve(new File([blob], file.name, { type: 'image/jpeg' })),
+        'image/jpeg',
+        CONFIG.COMPRESS_QUALITY
+      );
+    };
+    img.src = url;
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// CAPTION PREVIEW
+// ════════════════════════════════════════════════════════════
+function updateCaptionPreview(val) {
+  const overlay = document.getElementById('captionOverlay');
+  const text = document.getElementById('captionPreviewText');
+  const count = document.getElementById('charCount');
+
+  count.textContent = `${val.length} / 60`;
+  count.style.color = val.length > 50 ? 'rgba(240,107,107,0.7)' : 'rgba(240,237,230,0.3)';
+
+  if (val.trim() && selectedPreviewURL) {
+    text.textContent = `"${val}"`;
+    overlay.style.display = 'block';
+  } else {
+    overlay.style.display = 'none';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// SUBMIT
+// ════════════════════════════════════════════════════════════
+async function submitPhoto() {
+  if (!selectedFile) return;
+
+  const name    = document.getElementById('nameInput').value.trim();
+  const caption = document.getElementById('captionInput').value.trim();
+  const btn = document.getElementById('submitBtn');
+  const loading = document.getElementById('btnLoading');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressBar = document.getElementById('progressBar');
+
+  btn.disabled = true;
+  loading.classList.add('show');
+  progressWrap.classList.add('show');
+  hideError();
+
+  try {
+    // Compress
+    progressBar.style.width = '20%';
+    const compressed = await compressImage(selectedFile);
+    progressBar.style.width = '40%';
+
+    // Build filename: timestamp~displayname~caption.jpg
+    // ~ delimiter so display can parse all three parts reliably
+    const ts = Date.now();
+    const safeName = name
+      ? name.replace(/[^a-zA-Z0-9\s.]/g, '').trim().replace(/\s+/g, '-')
+      : 'member';
+    const safeCaption = caption
+      ? caption.replace(/[^a-zA-Z0-9\s!?.,']/g, '').trim().replace(/\s+/g, '-')
+      : '';
+    const filename = safeCaption
+      ? `${ts}~${safeName}~${safeCaption}.jpg`
+      : `${ts}~${safeName}.jpg`;
+
+    progressBar.style.width = '60%';
+
+    // Demo mode
+    if (CONFIG.SUPABASE_ANON_KEY === 'YOUR_ANON_KEY_HERE') {
+      await new Promise(r => setTimeout(r, 1200));
+      progressBar.style.width = '100%';
+      showSuccess(name, selectedPreviewURL);
+      return;
+    }
+
+    // Upload to Supabase Storage
+    const res = await fetch(
+      `${CONFIG.SUPABASE_URL}/storage/v1/object/${CONFIG.BUCKET}/${filename}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
+          'apikey': CONFIG.SUPABASE_ANON_KEY,
+          'Content-Type': 'image/jpeg',
+          'x-upsert': 'false',
+        },
+        body: compressed,
+      }
+    );
+
+    progressBar.style.width = '90%';
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err || 'Upload failed');
+    }
+
+    progressBar.style.width = '100%';
+    showSuccess(name, selectedPreviewURL);
+
+  } catch (err) {
+    console.error(err);
+    showError('Upload failed. Check your connection and try again.');
+    btn.disabled = false;
+    loading.classList.remove('show');
+    progressWrap.classList.remove('show');
+    progressBar.style.width = '0%';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// SUCCESS / RESET
+// ════════════════════════════════════════════════════════════
+function showSuccess(name, previewURL) {
+  const preview = document.getElementById('successPreview');
+  if (previewURL) {
+    preview.src = previewURL;
+    preview.style.display = 'block';
+  }
+  document.getElementById('memberNameDisplay').textContent =
+    name ? name : 'your photo';
+
+  document.getElementById('uploadScreen').classList.add('hidden');
+  const success = document.getElementById('successScreen');
+  success.classList.add('show');
+}
+
+function resetForm() {
+  selectedFile = null;
+  selectedPreviewURL = null;
+
+  document.getElementById('fileInput').value = '';
+  document.getElementById('previewImg').src = '';
+  document.getElementById('photoPicker').classList.remove('has-photo');
+  document.getElementById('nameInput').value = '';
+  document.getElementById('captionInput').value = '';
+  document.getElementById('charCount').textContent = '0 / 60';
+  document.getElementById('captionOverlay').style.display = 'none';
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('btnLoading').classList.remove('show');
+  document.getElementById('progressWrap').classList.remove('show');
+  document.getElementById('progressBar').style.width = '0%';
+  hideError();
+
+  document.getElementById('uploadScreen').classList.remove('hidden');
+  document.getElementById('successScreen').classList.remove('show');
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function hideError() {
+  document.getElementById('errorMsg').classList.remove('show');
+}
+</script>
+</body>
+</html>
