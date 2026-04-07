@@ -623,11 +623,10 @@ async function submitPhoto() {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
-          'apikey': CONFIG.SUPABASE_ANON_KEY,
-          'Content-Type': 'image/jpeg',
-          'x-upsert': 'false',
-        },
+  'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
+  'Content-Type': 'image/jpeg',
+  'x-upsert': 'true',
+},
         body: compressed,
       }
     );
