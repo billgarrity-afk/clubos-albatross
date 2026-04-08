@@ -484,7 +484,7 @@ const CONFIG = {
 };
 
 // Init Supabase client — handles all auth correctly
-const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+const sbClient = window.sbClient.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 // ════════════════════════════════════════════════════════════
 // STATE
@@ -614,7 +614,7 @@ async function submitPhoto() {
     progressBar.style.width = '60%';
 
     // Upload via Supabase JS library — handles auth correctly
-    const { error } = await supabase.storage
+   const { error } = await sbClient.storage
       .from(CONFIG.BUCKET)
       .upload(filename, compressed, {
         contentType: 'image/jpeg',
