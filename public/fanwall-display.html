@@ -579,7 +579,7 @@ function photoSlotHTML(photo, isNew) {
 // SUPABASE FETCH
 // ════════════════════════════════════════════════════════════
 async function fetchPhotos() {
-  if (CONFIG.SUPABASE_ANON_KEY === 'YOUR_ANON_KEY_HERE') {
+  if (CONFIG.SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrZnZ3cWV3bmZuaWJwenl0c3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE2NzYsImV4cCI6MjA5MDM5NzY3Nn0.cnMztZVHDV3Hof-26aRi4NIM7wKwjzxAfoMBR3oItms') {
     loadDemoPhotos();
     return;
   }
@@ -609,7 +609,7 @@ async function fetchPhotos() {
       state.seenNames.add(f.name);
 
       // Parse filename: timestamp~displayname~caption.jpg
-      const parts = f.name.replace(/\.[^.]+$/, '').split('~');
+      const parts = f.name.replace(/\.[^.]+$/, '').split('_');
       const ts = parseInt(parts[0]) || Date.now();
       const displayName = parts[1] ? parts[1].replace(/-/g, ' ') : '';
       const caption = parts[2] ? parts[2].replace(/-/g, ' ') : '';
