@@ -605,7 +605,7 @@ async function submitPhoto() {
       ? name.replace(/[^a-zA-Z0-9\s.]/g, '').trim().replace(/\s+/g, '-')
       : 'member';
     const safeCaption = caption
-      ? caption.replace(/[^a-zA-Z0-9\s!?.,']/g, '').trim().replace(/\s+/g, '-')
+      ? caption.replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '-')
       : '';
     const filename = safeCaption
       ? `${ts}~${safeName}~${safeCaption}.jpg`
