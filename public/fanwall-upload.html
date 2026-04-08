@@ -608,9 +608,8 @@ async function submitPhoto() {
       ? caption.replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '-')
       : '';
     const filename = safeCaption
-      ? `${ts}~${safeName}~${safeCaption}.jpg`
-      : `${ts}~${safeName}.jpg`;
-
+      ? `${ts}_${safeName}_${safeCaption}.jpg`
+      : `${ts}_${safeName}.jpg`;
     progressBar.style.width = '60%';
 
     // Upload via Supabase JS library — handles auth correctly
