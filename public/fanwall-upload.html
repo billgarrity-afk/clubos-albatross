@@ -484,7 +484,7 @@ const CONFIG = {
 };
 
 // Init Supabase client — handles all auth correctly
-const sbClient = window.sbClient.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+const sbClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 // ════════════════════════════════════════════════════════════
 // STATE
