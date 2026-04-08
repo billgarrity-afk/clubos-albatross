@@ -466,9 +466,10 @@
   <button class="another-btn" onclick="resetForm()">Add Another Photo</button>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ════════════════════════════════════════════════════════════
-// CONFIG — Must match fanwall-display.html
+// CONFIG
 // ════════════════════════════════════════════════════════════
 const CONFIG = {
   SUPABASE_URL:      'https://ykfvwqewnfnibpzytspn.supabase.co',
@@ -478,9 +479,12 @@ const CONFIG = {
   EVENT_NAME:        'Your photo goes live on the big screen in seconds',
   SPONSOR_NAME:      'Perch',
   MAX_SIZE_MB:       5,
-  COMPRESS_MAX_PX:   1600,  // max dimension after compression
+  COMPRESS_MAX_PX:   1600,
   COMPRESS_QUALITY:  0.82,
 };
+
+// Init Supabase client — handles all auth correctly
+const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 // ════════════════════════════════════════════════════════════
 // STATE
@@ -601,42 +605,25 @@ async function submitPhoto() {
       ? name.replace(/[^a-zA-Z0-9\s.]/g, '').trim().replace(/\s+/g, '-')
       : 'member';
     const safeCaption = caption
-  ? caption.replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '-')
-  : '';
+      ? caption.replace(/[^a-zA-Z0-9\s!?.,']/g, '').trim().replace(/\s+/g, '-')
+      : '';
     const filename = safeCaption
       ? `${ts}~${safeName}~${safeCaption}.jpg`
       : `${ts}~${safeName}.jpg`;
 
     progressBar.style.width = '60%';
 
-    // Demo mode
-    if (CONFIG.SUPABASE_ANON_KEY === 'YOUR_ANON_KEY_HERE') {
-      await new Promise(r => setTimeout(r, 1200));
-      progressBar.style.width = '100%';
-      showSuccess(name, selectedPreviewURL);
-      return;
-    }
-
-    // Upload to Supabase Storage
-    const res = await fetch(
-      `${CONFIG.SUPABASE_URL}/storage/v1/object/${CONFIG.BUCKET}/${filename}`,
-      {
-        method: 'POST',
-        headers: {
-  'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
-  'Content-Type': 'image/jpeg',
-  'x-upsert': 'true',
-},
-        body: compressed,
-      }
-    );
+    // Upload via Supabase JS library — handles auth correctly
+    const { error } = await supabase.storage
+      .from(CONFIG.BUCKET)
+      .upload(filename, compressed, {
+        contentType: 'image/jpeg',
+        upsert: false,
+      });
 
     progressBar.style.width = '90%';
 
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || 'Upload failed');
-    }
+    if (error) throw new Error(error.message);
 
     progressBar.style.width = '100%';
     showSuccess(name, selectedPreviewURL);
