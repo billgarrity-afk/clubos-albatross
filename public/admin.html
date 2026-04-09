@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClubOS — Albatross Golf Pub</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --green-dark:   #1A3A2A;
+  --green-mid:    #2D5A3D;
+  --green-accent: #4A8C5C;
+  --green-light:  #E8F4EC;
+  --gold:         #C9A84C;
+  --gold-light:   #FBF4E3;
+  --gold-border:  rgba(201,168,76,0.3);
+  --cream:        #F7F5F1;
+  --white:        #FFFFFF;
+  --charcoal:     #1C1C1E;
+  --gray:         #6B7280;
+  --gray-light:   #E5E7EB;
+  --gray-faint:   #F3F4F6;
+  --red:          #DC2626;
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.07), 0 2px 8px rgba(0,0,0,0.05);
+  --shadow:       0 2px 8px rgba(0,0,0,0.08), 0 4px 20px rgba(0,0,0,0.06);
+  --radius:       10px;
+  --radius-sm:    7px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--charcoal); min-height:100vh; font-size:14px; }
+button { font-family:inherit; cursor:pointer; }
+input,select,textarea { font-family:inherit; }
+
+/* ── HEADER ─────────────────────────────────── */
+.header {
+  background:var(--green-dark);
+  padding:0 32px;
+  height:64px;
+  display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:100;
+  box-shadow:0 2px 12px rgba(0,0,0,.2);
+}
+.header::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, transparent 0%, var(--gold) 30%, var(--green-accent) 70%, transparent 100%);
+  opacity:.6;
+}
+.header-left { display:flex; align-items:center; gap:14px; }
+.club-mark {
+  width:38px; height:38px; background:var(--gold); border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Playfair Display',serif; font-size:17px; font-weight:600;
+  color:var(--green-dark); flex-shrink:0;
+}
+.club-name { font-family:'Playfair Display',serif; font-size:18px; font-weight:500; color:var(--white); line-height:1; }
+.club-label { font-size:10px; color:var(--gold); letter-spacing:2.5px; text-transform:uppercase; margin-top:3px; opacity:.85; }
+.header-right { display:flex; align-items:center; gap:20px; }
+.live-indicator { display:flex; align-items:center; gap:7px; font-size:12px; color:rgba(255,255,255,.5); }
+.live-dot { width:7px; height:7px; border-radius:50%; background:#22C55E; box-shadow:0 0 6px #22C55E; animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.live-label { color:rgba(255,255,255,.7); }
+.header-time { font-family:'DM Mono',monospace; font-size:15px; color:rgba(255,255,255,.6); letter-spacing:1px; }
+.sync-badge {
+  display:flex; align-items:center; gap:5px;
+  font-size:11px; color:rgba(255,255,255,.45);
+  background:rgba(255,255,255,.06);
+  padding:4px 10px; border-radius:12px;
+  border:1px solid rgba(255,255,255,.08);
+  transition:all .3s;
+}
+.sync-badge.syncing { color:var(--gold); border-color:rgba(201,168,76,.3); }
+.sync-badge.error   { color:#FCA5A5; border-color:rgba(220,38,38,.3); }
+
+/* ── TAB NAV ─────────────────────────────────── */
+.tab-nav {
+  background:var(--white); border-bottom:1px solid var(--gray-light);
+  padding:0 32px; display:flex; gap:0;
+  box-shadow:var(--shadow-sm); position:sticky; top:64px; z-index:99;
+}
+.tab {
+  display:flex; align-items:center; gap:7px;
+  padding:0 20px; height:50px;
+  font-size:13.5px; font-weight:500; color:var(--gray);
+  cursor:pointer; border:none; background:none;
+  border-bottom:2.5px solid transparent;
+  transition:all .15s; user-select:none; white-space:nowrap;
+}
+.tab:hover { color:var(--charcoal); background:var(--gray-faint); }
+.tab.active { color:var(--green-dark); border-bottom-color:var(--green-accent); font-weight:600; }
+.tab-icon { font-size:15px; }
+.tab-badge { background:var(--green-accent); color:var(--white); font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; min-width:18px; text-align:center; }
+.tab-new { background:var(--gold); color:var(--green-dark); font-size:9px; font-weight:700; padding:2px 6px; border-radius:3px; letter-spacing:.5px; text-transform:uppercase; }
+
+/* ── CONTENT ─────────────────────────────────── */
+.content { max-width:900px; margin:0 auto; padding:28px 24px; }
+
+/* ── VOICE BAR ───────────────────────────────── */
+.voice-bar {
+  background:var(--green-dark); border-radius:var(--radius);
+  padding:14px 18px; display:flex; align-items:center; gap:14px; margin-bottom:20px;
+}
+.voice-btn {
+  width:42px; height:42px; border-radius:50%; background:var(--gold);
+  border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-size:19px; flex-shrink:0; transition:transform .15s, background .15s;
+}
+.voice-btn:hover { transform:scale(1.07); background:#d4b45a; }
+.voice-text { color:rgba(255,255,255,.75); font-size:13px; }
+.voice-example { font-size:11.5px; color:rgba(255,255,255,.4); font-style:italic; margin-top:2px; }
+
+/* ── CARDS ───────────────────────────────────── */
+.card { background:var(--white); border:1px solid var(--gray-light); border-radius:var(--radius); box-shadow:var(--shadow-sm); margin-bottom:16px; }
+.card-header { padding:16px 20px; border-bottom:1px solid var(--gray-light); display:flex; align-items:center; justify-content:space-between; }
+.card-title { font-family:'Playfair Display',serif; font-size:15px; font-weight:500; color:var(--charcoal); display:flex; align-items:center; gap:8px; }
+.card-body { padding:18px 20px; }
+
+/* ── BUTTONS ─────────────────────────────────── */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:var(--radius-sm); font-size:13.5px; font-weight:500; transition:all .15s; border:none; cursor:pointer; }
+.btn-primary { background:var(--green-dark); color:var(--white); }
+.btn-primary:hover { background:var(--green-mid); }
+.btn-gold { background:var(--gold); color:var(--green-dark); font-weight:600; }
+.btn-gold:hover { background:#d4b45a; }
+.btn-outline { background:transparent; color:var(--charcoal); border:1px solid var(--gray-light); }
+.btn-outline:hover { background:var(--gray-faint); border-color:#D1D5DB; }
+.btn-ghost { background:transparent; color:var(--gray); padding:8px 12px; }
+.btn-ghost:hover { color:var(--charcoal); background:var(--gray-faint); }
+.btn-sm { padding:5px 12px; font-size:12px; border-radius:6px; }
+.btn-danger-soft { background:#FEF2F2; color:var(--red); border:none; }
+.btn-danger-soft:hover { background:#FEE2E2; }
+.btn:disabled { opacity:.45; cursor:not-allowed; }
+
+/* ── FORM ────────────────────────────────────── */
+.form-group { margin-bottom:14px; }
+.form-group:last-child { margin-bottom:0; }
+.form-label { display:block; font-size:12px; font-weight:600; color:var(--charcoal); margin-bottom:5px; letter-spacing:.2px; }
+.form-input { width:100%; padding:9px 12px; border:1.5px solid var(--gray-light); border-radius:var(--radius-sm); font-size:14px; color:var(--charcoal); background:var(--white); outline:none; transition:border .15s, box-shadow .15s; }
+.form-input:focus { border-color:var(--green-accent); box-shadow:0 0 0 3px rgba(74,140,92,.1); }
+.form-select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 11px center; padding-right:32px; }
+.form-textarea { resize:vertical; min-height:78px; line-height:1.5; }
+.form-hint { font-size:11px; color:var(--gray); margin-top:4px; }
+.form-row { display:grid; gap:12px; }
+.form-row-2 { grid-template-columns:1fr 1fr; }
+.form-row-3 { grid-template-columns:1fr 1fr 1fr; }
+
+/* ── INLINE FORM PANEL ───────────────────────── */
+.add-panel {
+  background:var(--green-light); border:1.5px solid #BBF7D0;
+  border-radius:var(--radius); padding:20px; margin-bottom:16px; display:none;
+}
+.add-panel.open { display:block; }
+.add-panel-title { font-weight:600; font-size:14px; color:var(--green-mid); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+
+/* ── DATE NAV ────────────────────────────────── */
+.date-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.date-nav { display:flex; align-items:center; gap:10px; }
+.date-arrow { width:32px; height:32px; border-radius:var(--radius-sm); border:1.5px solid var(--gray-light); background:var(--white); font-size:16px; color:var(--gray); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; }
+.date-arrow:hover { border-color:var(--green-accent); color:var(--green-dark); }
+.date-label { font-weight:600; font-size:14px; min-width:200px; text-align:center; }
+.today-btn { font-size:12px; padding:5px 12px; }
+
+/* ── SPORT TABS ──────────────────────────────── */
+.sport-tabs { display:flex; gap:4px; background:var(--gray-faint); padding:4px; border-radius:8px; width:fit-content; }
+.sport-tab { padding:6px 16px; border-radius:6px; border:none; background:transparent; font-size:13px; font-weight:500; color:var(--gray); cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:6px; }
+.sport-tab.active { background:var(--white); color:var(--charcoal); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+
+/* ── RESERVATION LIST ────────────────────────── */
+.res-list { display:flex; flex-direction:column; gap:8px; }
+.res-row { display:flex; align-items:center; gap:14px; background:var(--white); border:1px solid var(--gray-light); border-radius:var(--radius-sm); padding:12px 16px; transition:box-shadow .15s; }
+.res-row:hover { box-shadow:var(--shadow-sm); }
+.res-court { width:42px; height:42px; background:var(--green-dark); border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; gap:1px; }
+.res-court-label { font-size:8px; letter-spacing:1px; color:rgba(255,255,255,.5); text-transform:uppercase; }
+.res-court-num { font-family:'Playfair Display',serif; font-size:18px; font-weight:600; color:var(--white); line-height:1; }
+.res-time { font-family:'DM Mono',monospace; font-size:14px; color:var(--charcoal); min-width:130px; font-weight:500; }
+.res-info { flex:1; }
+.res-member { font-weight:500; color:var(--charcoal); font-size:14px; }
+.res-type-label { font-size:12px; color:var(--gray); margin-top:1px; }
+.res-right { display:flex; align-items:center; gap:8px; margin-left:auto; }
+
+/* ── PILLS ───────────────────────────────────── */
+.pill { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; }
+.pill-green { background:#DCFCE7; color:#166534; }
+.pill-gold  { background:var(--gold-light); color:#7A5C1A; }
+.pill-gray  { background:var(--gray-faint); color:#374151; }
+.pill-blue  { background:#DBEAFE; color:#1D4ED8; }
+
+/* ── ANNOUNCEMENT LIST ───────────────────────── */
+.ann-row { display:flex; gap:14px; background:var(--white); border:1px solid var(--gray-light); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:8px; align-items:flex-start; transition:box-shadow .15s; }
+.ann-row:hover { box-shadow:var(--shadow-sm); }
+.ann-icon { font-size:22px; flex-shrink:0; margin-top:2px; }
+.ann-body-wrap { flex:1; }
+.ann-title { font-weight:600; font-size:14px; color:var(--charcoal); }
+.ann-body { font-size:13px; color:var(--gray); margin-top:3px; line-height:1.55; }
+.ann-meta { margin-top:7px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.ann-actions { display:flex; gap:6px; flex-shrink:0; }
+
+/* ── LOADING & SKELETON ──────────────────────── */
+.loading-state { text-align:center; padding:48px 20px; }
+.spinner { width:28px; height:28px; border:3px solid var(--gray-light); border-top-color:var(--green-accent); border-radius:50%; animation:spin .7s linear infinite; margin:0 auto 14px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-text { font-size:13px; color:var(--gray); }
+
+.skeleton {
+  background:linear-gradient(90deg, var(--gray-faint) 25%, var(--gray-light) 50%, var(--gray-faint) 75%);
+  background-size:400% 100%;
+  animation:shimmer 1.4s ease infinite;
+  border-radius:6px;
+}
+@keyframes shimmer { 0%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+/* ── EMPTY STATE ─────────────────────────────── */
+.empty { text-align:center; padding:48px 20px; color:var(--gray); }
+.empty-icon { font-size:36px; margin-bottom:12px; opacity:.45; }
+.empty-title { font-family:'Playfair Display',serif; font-size:17px; color:var(--charcoal); margin-bottom:6px; }
+.empty-body { font-size:13px; max-width:280px; margin:0 auto; line-height:1.6; }
+
+/* ── SETTINGS ────────────────────────────────── */
+.settings-group { margin-bottom:28px; }
+.settings-group-title { font-family:'Playfair Display',serif; font-size:15px; font-weight:500; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gray-light); display:flex; align-items:center; gap:8px; }
+.url-display { font-family:'DM Mono',monospace; font-size:12px; background:var(--gray-faint); padding:9px 12px; border-radius:var(--radius-sm); color:var(--charcoal); border:1px solid var(--gray-light); display:flex; align-items:center; justify-content:space-between; gap:12px; overflow:hidden; }
+.url-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ── TOAST ───────────────────────────────────── */
+.toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  background:var(--green-dark); color:var(--white);
+  padding:10px 20px; border-radius:8px;
+  font-size:13px; font-weight:500;
+  box-shadow:var(--shadow); z-index:9999;
+  opacity:0; pointer-events:none;
+  transition:opacity .2s, transform .2s;
+  transform:translateX(-50%) translateY(6px);
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.error { background:#991B1B; }
+
+/* ── DB STATUS BAR ───────────────────────────── */
+.db-status {
+  background:rgba(201,168,76,.08);
+  border:1px solid rgba(201,168,76,.2);
+  border-radius:var(--radius-sm);
+  padding:10px 14px;
+  display:flex; align-items:center; gap:10px;
+  margin-bottom:18px;
+  font-size:12px; color:var(--gray);
+}
+.db-status.error {
+  background:#FEF2F2;
+  border-color:rgba(220,38,38,.2);
+  color:#991B1B;
+}
+.db-status-dot { width:7px; height:7px; border-radius:50%; background:var(--green-accent); flex-shrink:0; }
+.db-status.error .db-status-dot { background:var(--red); }
+
+/* ── MODULE TEASER ───────────────────────────── */
+.module-teaser { background:var(--white); border:1.5px dashed var(--gold-border); border-radius:var(--radius); padding:32px 24px; text-align:center; }
+.module-teaser-icon { font-size:36px; margin-bottom:12px; opacity:.7; }
+.module-teaser-title { font-family:'Playfair Display',serif; font-size:18px; margin-bottom:8px; color:var(--charcoal); }
+.module-teaser-body { font-size:13px; color:var(--gray); max-width:320px; margin:0 auto 20px; line-height:1.6; }
+
+@media(max-width:680px) {
+  .header { padding:0 16px; }
+  .tab-nav { padding:0 12px; overflow-x:auto; }
+  .content { padding:20px 14px; }
+  .form-row-2, .form-row-3 { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="club-mark" id="hdr-mark">B</div>
+    <div>
+      <div class="club-name" id="hdr-name">Albatross Golf Pub</div>
+      <div class="club-label">ClubOS Management</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="sync-badge" id="sync-badge">
+      <span id="sync-icon">●</span>
+      <span id="sync-text">Connecting…</span>
+    </div>
+    <div class="live-indicator">
+      <div class="live-dot"></div>
+      <div class="live-label">Display Live</div>
+    </div>
+    <div class="header-time" id="hdr-time">—</div>
+  </div>
+</header>
+
+<nav class="tab-nav" id="tab-nav"></nav>
+<div class="content" id="content"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// ── CONFIG — edit per deployment ────────────────────
+// ═══════════════════════════════════════════════════════
+const SUPABASE_URL      = 'https://ykfvwqewnfnibpzytspn.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrZnZ3cWV3bmZuaWJwenl0c3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE2NzYsImV4cCI6MjA5MDM5NzY3Nn0.cnMztZVHDV3Hof-26aRi4NIM7wKwjzxAfoMBR3oItms'; // ← paste from Supabase dashboard → Settings → API
+
+const CLUB = {
+  id:          'ALBATROSS_CLUB_UUID_HERE', // Ballantyne club UUID
+  slug:        'albatross-golf-pub',
+  name:        'Albatross Golf Pub',
+  logoInitial: 'A',
+  sports:      ['simulator'],
+  courtCount:  4,
+  sponsor:     { name: 'Perch', tagline: 'Your Premium Outdoor Living Partner' },
+  displayUrls: {
+    courts:   '',
+    teesheet: '',
+    fnb:      ''
+  }
+};
+
+const MODULES = {
+  courts:        true,
+  announcements: true,
+  fnb:           false,
+  teesheet:      false,
+  bingo:         false,
+  rewards:       false,
+  pickem:        false
+};
+
+// ═══════════════════════════════════════════════════════
+// ── SUPABASE CLIENT ──────────────────────────────────
+// ═══════════════════════════════════════════════════════
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── CONNECTION HEALTH ─────────────────────────────────
+let dbConnected = false;
+
+async function checkConnection() {
+  try {
+    const { error } = await db.from('club_content').select('id').limit(1);
+    dbConnected = !error;
+    updateSyncBadge(dbConnected ? 'connected' : 'error', error?.message);
+  } catch (e) {
+    dbConnected = false;
+    updateSyncBadge('error', e.message);
+  }
+}
+
+function updateSyncBadge(status, msg) {
+  const badge = document.getElementById('sync-badge');
+  const icon  = document.getElementById('sync-icon');
+  const text  = document.getElementById('sync-text');
+  badge.className = 'sync-badge';
+  if (status === 'connected') {
+    icon.textContent = '●'; text.textContent = 'Supabase Live';
+  } else if (status === 'syncing') {
+    badge.classList.add('syncing'); icon.textContent = '↻'; text.textContent = 'Saving…';
+  } else {
+    badge.classList.add('error'); icon.textContent = '!'; text.textContent = 'DB Error';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ── DATA LAYER — ANNOUNCEMENTS ───────────────────────
+// ═══════════════════════════════════════════════════════
+// Uses club_content table: { id, club_id, type, data (jsonb), is_active, created_at, updated_at }
+
+async function fetchAnnouncements() {
+  const { data, error } = await db
+    .from('club_content')
+    .select('*')
+    .eq('club_id', CLUB.id)
+    .eq('type', 'announcement')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(row => ({
+    id:      row.id,
+    icon:    row.data?.icon    || '📢',
+    title:   row.data?.title   || '',
+    body:    row.data?.body    || '',
+    status:  row.is_active ? 'active' : 'draft',
+    created: new Date(row.created_at).getTime()
+  }));
+}
+
+async function createAnnouncement({ icon, title, body }) {
+  updateSyncBadge('syncing');
+  const { data, error } = await db
+    .from('club_content')
+    .insert({
+      club_id:    CLUB.id,
+      type:       'announcement',
+      data:       { icon, title, body },
+      is_active:  true
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  updateSyncBadge('connected');
+  return data;
+}
+
+async function updateAnnouncementStatus(id, isActive) {
+  updateSyncBadge('syncing');
+  const { error } = await db
+    .from('club_content')
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('club_id', CLUB.id);
+  if (error) throw error;
+  updateSyncBadge('connected');
+}
+
+async function deleteAnnouncement(id) {
+  updateSyncBadge('syncing');
+  const { error } = await db
+    .from('club_content')
+    .delete()
+    .eq('id', id)
+    .eq('club_id', CLUB.id);
+  if (error) throw error;
+  updateSyncBadge('connected');
+}
+
+// ═══════════════════════════════════════════════════════
+// ── DATA LAYER — COURT RESERVATIONS ─────────────────
+// ═══════════════════════════════════════════════════════
+// Uses court_reservations table:
+// { id, club_id, sport, date, court, start_time, end_time, member_name, reservation_type, created_at }
+
+function resDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+async function fetchReservations(sport, date) {
+  const { data, error } = await db
+    .from('court_reservations')
+    .select('*')
+    .eq('club_id', CLUB.id)
+    .eq('sport', sport)
+    .eq('date', resDateStr(date))
+    .order('court', { ascending: true })
+    .order('start_time', { ascending: true });
+  if (error) throw error;
+  return (data || []).map(row => ({
+    id:     row.id,
+    court:  row.court,
+    start:  row.start_time,
+    end:    row.end_time,
+    member: row.member_name || 'Open Play',
+    type:   row.reservation_type || 'Booked'
+  }));
+}
+
+async function createReservation({ court, start, end, member, type, sport, date }) {
+  updateSyncBadge('syncing');
+  const { data, error } = await db
+    .from('court_reservations')
+    .insert({
+      club_id:          CLUB.id,
+      sport:            sport,
+      date:             resDateStr(date),
+      court:            parseInt(court),
+      start_time:       start,
+      end_time:         end,
+      member_name:      member || 'Open Play',
+      reservation_type: type
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  updateSyncBadge('connected');
+  return data;
+}
+
+async function deleteReservation(id) {
+  updateSyncBadge('syncing');
+  const { error } = await db
+    .from('court_reservations')
+    .delete()
+    .eq('id', id)
+    .eq('club_id', CLUB.id);
+  if (error) throw error;
+  updateSyncBadge('connected');
+}
+
+// ═══════════════════════════════════════════════════════
+// ── STATE ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+const STATE = {
+  tab:           'courts',
+  sport:         CLUB.sports[0] || 'tennis',
+  date:          new Date(),
+  showResForm:   false,
+  showAnnForm:   false,
+  loading:       false,
+  announcements: null,   // null = not yet loaded
+  reservations:  null,
+  annBadge:      0
+};
+
+// ═══════════════════════════════════════════════════════
+// ── TABS ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+function buildTabs() {
+  const defs = [
+    { id:'courts',        icon:'🎾', label:'Courts',        show:MODULES.courts },
+    { id:'announcements', icon:'📢', label:'Announcements', show:MODULES.announcements, badge:() => STATE.annBadge },
+    { id:'fnb',           icon:'🍽️', label:'F&B',           show:MODULES.fnb },
+    { id:'teesheet',      icon:'⛳', label:'Tee Sheet',     show:MODULES.teesheet },
+    { id:'bingo',         icon:'🎱', label:'Bar Bingo',      show:MODULES.bingo, isNew:true },
+    { id:'rewards',       icon:'⭐', label:'Rewards',       show:MODULES.rewards, isNew:true },
+    { id:'pickem',        icon:'🏆', label:"Pick'em",       show:MODULES.pickem, isNew:true },
+    { id:'settings',      icon:'⚙️', label:'Settings',      show:true }
+  ];
+  document.getElementById('tab-nav').innerHTML = defs.filter(t=>t.show).map(t => {
+    const badge = t.badge ? t.badge() : 0;
+    return `<button class="tab ${STATE.tab===t.id?'active':''}" onclick="switchTab('${t.id}')">
+      <span class="tab-icon">${t.icon}</span>
+      ${t.label}
+      ${badge > 0 ? `<span class="tab-badge">${badge}</span>` : ''}
+      ${t.isNew ? `<span class="tab-new">New</span>` : ''}
+    </button>`;
+  }).join('');
+}
+
+async function switchTab(id) {
+  STATE.tab = id;
+  STATE.showResForm = false;
+  STATE.showAnnForm = false;
+  STATE.reservations = null;
+  STATE.announcements = null;
+  await render();
+}
+
+// ═══════════════════════════════════════════════════════
+// ── RENDER ROUTER ────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+async function render() {
+  buildTabs();
+  document.getElementById('hdr-name').textContent = CLUB.name;
+  document.getElementById('hdr-mark').textContent = CLUB.logoInitial;
+
+  const pages = {
+    courts:        renderCourts,
+    announcements: renderAnnouncements,
+    fnb:           () => moduleTeaser('🍽️','F&B Display Manager','Manage daily specials, the dining menu, and upcoming events — shown live on your bar and dining room TVs.'),
+    teesheet:      () => moduleTeaser('⛳','Tee Sheet Manager','Push live tee times, course conditions, and pace of play to your pro shop and grill room screens.'),
+    bingo:         () => moduleTeaser('🎱','Bar Bingo','Members play bingo live from their phones — no app required. Runs on your TVs as the shared board.'),
+    rewards:       () => moduleTeaser('⭐','ClubOS Rewards','Member point tracking, leaderboards, and loyalty rewards — displayed live on screen.'),
+    pickem:        () => moduleTeaser('🏆',"Pick'em","Weekly sports pick'em. Members submit picks by scanning a QR code. Live leaderboard on your TVs all week."),
+    settings:      renderSettings
+  };
+
+  const page = pages[STATE.tab];
+  if (page) {
+    const result = await page();
+    document.getElementById('content').innerHTML = result;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ── COURTS ───────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+async function renderCourts() {
+  let resHTML = loadingHTML('Loading reservations…');
+
+  if (STATE.reservations === null) {
+    try {
+      STATE.reservations = await fetchReservations(STATE.sport, STATE.date);
+    } catch(e) {
+      STATE.reservations = [];
+      setTimeout(() => toast('DB error: ' + e.message, true), 50);
+    }
+  }
+
+  const res = STATE.reservations;
+  const isToday = isTodayDate(STATE.date);
+  const dateLabel = STATE.date.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  if (res.length === 0) {
+    resHTML = `<div class="empty">
+      <div class="empty-icon">🎾</div>
+      <div class="empty-title">No reservations</div>
+      <div class="empty-body">Nothing booked yet. Hit + Add to create one.</div>
+    </div>`;
+  } else {
+    resHTML = `<div class="res-list">
+      ${res.map(r => `
+        <div class="res-row">
+          <div class="res-court">
+            <div class="res-court-label">Crt</div>
+            <div class="res-court-num">${r.court}</div>
+          </div>
+          <div class="res-time">${fmt12(r.start)} – ${fmt12(r.end)}</div>
+          <div class="res-info">
+            <div class="res-member">${r.member}</div>
+            <div class="res-type-label">${r.type} · ${cap(STATE.sport)}</div>
+          </div>
+          <div class="res-right">
+            <span class="pill ${typePill(r.type)}">${r.type}</span>
+            <button class="btn btn-sm btn-danger-soft" onclick="handleDeleteRes('${r.id}')">✕</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  return `
+  <div class="voice-bar">
+    <button class="voice-btn" title="ClubOS Voice" onclick="voicePrompt('courts')">🎤</button>
+    <div>
+      <div class="voice-text">ClubOS Voice — Courts</div>
+      <div class="voice-example">"Book court 3 for Sarah, 10 to 11:30" &nbsp;·&nbsp; "Close court 2 all morning"</div>
+    </div>
+  </div>
+
+  <div class="date-row">
+    <div class="date-nav">
+      <button class="date-arrow" onclick="shiftDate(-1)">‹</button>
+      <div class="date-label">${isToday ? '📅 Today · ' : ''}${dateLabel}</div>
+      <button class="date-arrow" onclick="shiftDate(1)">›</button>
+      ${!isToday ? `<button class="btn btn-outline today-btn" onclick="goToday()">Today</button>` : ''}
+    </div>
+    ${CLUB.sports.length > 1 ? `
+    <div class="sport-tabs">
+      ${CLUB.sports.map(s => `<button class="sport-tab ${STATE.sport===s?'active':''}" onclick="setSport('${s}')">${sportIcon(s)} ${cap(s)}</button>`).join('')}
+    </div>` : ''}
+  </div>
+
+  <div class="add-panel ${STATE.showResForm?'open':''}" id="res-panel">
+    <div class="add-panel-title">🎾 New Reservation — ${cap(STATE.sport)}</div>
+    <div class="form-row form-row-3">
+      <div class="form-group">
+        <label class="form-label">Court #</label>
+        <select class="form-input form-select" id="rf-court">
+          ${Array.from({length:CLUB.courtCount},(_,i)=>`<option value="${i+1}">Court ${i+1}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Start</label>
+        <input type="time" class="form-input" id="rf-start" value="09:00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">End</label>
+        <input type="time" class="form-input" id="rf-end" value="10:30">
+      </div>
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label">Member Name</label>
+        <input class="form-input" id="rf-member" placeholder="Last, First  (or leave blank for Open Play)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-input form-select" id="rf-type">
+          <option>Booked</option><option>Clinic</option><option>Open Play</option><option>Closed</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="btn btn-primary" id="save-res-btn" onclick="handleSaveRes()">Save Reservation</button>
+      <button class="btn btn-ghost" onclick="toggleResForm()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">${sportIcon(STATE.sport)} ${cap(STATE.sport)} · ${isToday?'Today':'Selected Day'}</div>
+      <button class="btn btn-sm btn-primary" onclick="toggleResForm()">+ Add</button>
+    </div>
+    <div class="card-body" style="padding:14px;">${resHTML}</div>
+  </div>`;
+}
+
+function toggleResForm() { STATE.showResForm = !STATE.showResForm; render(); }
+function shiftDate(n) { const d=new Date(STATE.date); d.setDate(d.getDate()+n); STATE.date=d; STATE.reservations=null; render(); }
+function goToday() { STATE.date=new Date(); STATE.reservations=null; render(); }
+function setSport(s) { STATE.sport=s; STATE.reservations=null; render(); }
+function isTodayDate(d) { const t=new Date(); return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear(); }
+
+async function handleSaveRes() {
+  const btn = document.getElementById('save-res-btn');
+  const court  = document.getElementById('rf-court')?.value;
+  const start  = document.getElementById('rf-start')?.value;
+  const end    = document.getElementById('rf-end')?.value;
+  const member = document.getElementById('rf-member')?.value?.trim() || 'Open Play';
+  const type   = document.getElementById('rf-type')?.value;
+  if (!start || !end) { toast('Please fill in start and end time.', true); return; }
+
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await createReservation({ court, start, end, member, type, sport: STATE.sport, date: STATE.date });
+    STATE.reservations = null;
+    STATE.showResForm = false;
+    await render();
+    toast('✓ Reservation saved — display updated');
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Save Reservation';
+    toast('Error: ' + e.message, true);
+  }
+}
+
+async function handleDeleteRes(id) {
+  try {
+    await deleteReservation(id);
+    STATE.reservations = null;
+    await render();
+    toast('Reservation removed');
+  } catch(e) {
+    toast('Error: ' + e.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ── ANNOUNCEMENTS ────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+async function renderAnnouncements() {
+  if (STATE.announcements === null) {
+    try {
+      STATE.announcements = await fetchAnnouncements();
+      STATE.annBadge = STATE.announcements.filter(a=>a.status==='active').length;
+      buildTabs(); // refresh badge
+    } catch(e) {
+      STATE.announcements = [];
+      setTimeout(() => toast('DB error: ' + e.message, true), 50);
+    }
+  }
+
+  const anns = STATE.announcements;
+  const active = anns.filter(a=>a.status==='active');
+
+  let listHTML = '';
+  if (anns.length === 0) {
+    listHTML = `<div class="empty">
+      <div class="empty-icon">📢</div>
+      <div class="empty-title">No announcements yet</div>
+      <div class="empty-body">Add an announcement and it appears on your displays immediately.</div>
+    </div>`;
+  } else {
+    listHTML = anns.map(a => `
+      <div class="ann-row">
+        <div class="ann-icon">${a.icon}</div>
+        <div class="ann-body-wrap">
+          <div class="ann-title">${a.title}</div>
+          <div class="ann-body">${a.body}</div>
+          <div class="ann-meta">
+            <span class="pill ${a.status==='active'?'pill-green':'pill-gray'}">${a.status==='active'?'● Live':'Draft'}</span>
+            <span style="font-size:11px;color:var(--gray);">Added ${new Date(a.created).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
+          </div>
+        </div>
+        <div class="ann-actions">
+          ${a.status==='active'
+            ? `<button class="btn btn-sm btn-outline" onclick="handleToggleAnn('${a.id}', false)">Pause</button>`
+            : `<button class="btn btn-sm btn-primary" onclick="handleToggleAnn('${a.id}', true)">Publish</button>`}
+          <button class="btn btn-sm btn-danger-soft" onclick="handleDeleteAnn('${a.id}')">Remove</button>
+        </div>
+      </div>`).join('');
+  }
+
+  return `
+  <div class="voice-bar">
+    <button class="voice-btn" onclick="voicePrompt('announcements')">🎤</button>
+    <div>
+      <div class="voice-text">ClubOS Voice — Announcements</div>
+      <div class="voice-example">"Add: Easter Brunch, Sunday April 20, $65 per adult" &nbsp;·&nbsp; "Remove the tournament notice"</div>
+    </div>
+  </div>
+
+  <div class="add-panel ${STATE.showAnnForm?'open':''}" id="ann-panel">
+    <div class="add-panel-title">📢 New Announcement</div>
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input class="form-input" id="af-title" placeholder="Member-Guest Tournament">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icon (emoji)</label>
+        <input class="form-input" id="af-icon" placeholder="🏆" style="max-width:90px;">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Body *</label>
+      <textarea class="form-input form-textarea" id="af-body" placeholder="April 5th, 8:00 AM shotgun start. Registration closes April 1st…"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="btn btn-primary" id="save-ann-btn" onclick="handleSaveAnn()">Publish to Display</button>
+      <button class="btn btn-ghost" onclick="toggleAnnForm()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📢 Announcements
+        <span class="pill pill-green" style="font-size:11px;">${active.length} live</span>
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="toggleAnnForm()">+ Add</button>
+    </div>
+    <div class="card-body" style="padding:12px 14px;">${listHTML}</div>
+  </div>`;
+}
+
+function toggleAnnForm() { STATE.showAnnForm = !STATE.showAnnForm; render(); }
+
+async function handleSaveAnn() {
+  const btn   = document.getElementById('save-ann-btn');
+  const title = document.getElementById('af-title')?.value?.trim();
+  const body  = document.getElementById('af-body')?.value?.trim();
+  const icon  = document.getElementById('af-icon')?.value?.trim() || '📢';
+  if (!title || !body) { toast('Title and body are required.', true); return; }
+
+  btn.disabled = true; btn.textContent = 'Publishing…';
+  try {
+    await createAnnouncement({ icon, title, body });
+    STATE.announcements = null;
+    STATE.showAnnForm = false;
+    await render();
+    toast('✓ Announcement published to display');
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Publish to Display';
+    toast('Error: ' + e.message, true);
+  }
+}
+
+async function handleToggleAnn(id, isActive) {
+  try {
+    await updateAnnouncementStatus(id, isActive);
+    STATE.announcements = null;
+    await render();
+    toast(isActive ? '✓ Announcement published' : 'Announcement paused');
+  } catch(e) {
+    toast('Error: ' + e.message, true);
+  }
+}
+
+async function handleDeleteAnn(id) {
+  try {
+    await deleteAnnouncement(id);
+    STATE.announcements = null;
+    await render();
+    toast('Announcement removed');
+  } catch(e) {
+    toast('Error: ' + e.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ── SETTINGS ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+function renderSettings() {
+  return `
+  <div class="settings-group">
+    <div class="settings-group-title">🏌️ Club Information</div>
+    <div class="form-row form-row-2">
+      <div class="form-group"><label class="form-label">Club Name</label><input class="form-input" id="s-name" value="${CLUB.name}"></div>
+      <div class="form-group"><label class="form-label">Logo Initial</label><input class="form-input" id="s-logo" value="${CLUB.logoInitial}" maxlength="2" style="max-width:80px;font-family:'Playfair Display',serif;font-size:20px;text-align:center;"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Sponsor Name</label><input class="form-input" id="s-spname" value="${CLUB.sponsor?.name||''}"></div>
+    <div class="form-group"><label class="form-label">Sponsor Tagline</label><input class="form-input" id="s-sptag" value="${CLUB.sponsor?.tagline||''}"></div>
+    <button class="btn btn-primary" onclick="saveSettings()" style="margin-top:8px;">Save Settings</button>
+  </div>
+
+  <div class="settings-group">
+    <div class="settings-group-title">📺 Display URLs</div>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:14px;line-height:1.6;">These URLs load inside your Enplug Web Page App. Updates appear on screen within 30 seconds.</p>
+    ${Object.entries(CLUB.displayUrls).filter(([,v])=>v).map(([k,v]) => `
+      <div class="form-group">
+        <label class="form-label">${k==='courts'?'🎾 Court Display':k==='teesheet'?'⛳ Tee Sheet Display':'🍽️ F&B Display'}</label>
+        <div class="url-display">
+          <span class="url-text">${v}</span>
+          <button class="btn btn-sm btn-outline" onclick="copyText('${v}')">Copy</button>
+        </div>
+      </div>`).join('')}
+  </div>
+
+  <div class="settings-group">
+    <div class="settings-group-title">🗄️ Database</div>
+    <div style="font-size:13px;color:var(--gray);line-height:1.9;">
+      <div>Project: <code style="font-family:'DM Mono',monospace;background:var(--gray-faint);padding:2px 6px;border-radius:4px;">ykfvwqewnfnibpzytspn</code></div>
+      <div>Club ID: <code style="font-family:'DM Mono',monospace;background:var(--gray-faint);padding:2px 6px;border-radius:4px;">${CLUB.id}</code></div>
+      <div>Tables in use: <code style="font-family:'DM Mono',monospace;background:var(--gray-faint);padding:2px 6px;border-radius:4px;">club_content</code> · <code style="font-family:'DM Mono',monospace;background:var(--gray-faint);padding:2px 6px;border-radius:4px;">court_reservations</code></div>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="settings-group-title">ℹ️ About</div>
+    <div style="font-size:13px;color:var(--gray);line-height:1.8;">
+      ClubOS version 3.0 — Supabase Edition · <a href="mailto:bill@clubhousectv.com" style="color:var(--green-accent);">Contact support</a>
+    </div>
+  </div>`;
+}
+
+function saveSettings() {
+  CLUB.name = document.getElementById('s-name')?.value?.trim() || CLUB.name;
+  CLUB.logoInitial = document.getElementById('s-logo')?.value?.trim() || CLUB.logoInitial;
+  CLUB.sponsor.name = document.getElementById('s-spname')?.value?.trim() || '';
+  CLUB.sponsor.tagline = document.getElementById('s-sptag')?.value?.trim() || '';
+  document.getElementById('hdr-name').textContent = CLUB.name;
+  document.getElementById('hdr-mark').textContent = CLUB.logoInitial;
+  toast('✓ Settings saved');
+}
+
+// ═══════════════════════════════════════════════════════
+// ── MODULE TEASERS ────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+function moduleTeaser(icon, title, body) {
+  return `<div class="module-teaser">
+    <div class="module-teaser-icon">${icon}</div>
+    <div style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:8px;color:var(--charcoal);">${title}</div>
+    <div style="font-size:13px;color:var(--gray);max-width:320px;margin:0 auto 20px;line-height:1.6;">${body}</div>
+    <a href="mailto:bill@clubhousectv.com?subject=Interested in ${title}" class="btn btn-gold">Learn More</a>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// ── UTILS ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+function fmt12(t) {
+  if (!t) return '';
+  const [h,m] = t.split(':').map(Number);
+  return `${h%12||12}:${m.toString().padStart(2,'0')} ${h>=12?'PM':'AM'}`;
+}
+function cap(s) { return s ? s[0].toUpperCase()+s.slice(1) : ''; }
+function sportIcon(s) { return {tennis:'🎾',pickleball:'🏓',golf:'⛳',pool:'🏊',simulator:'🏌️'}[s]||'🎾'; }
+function typePill(t) { return {Booked:'pill-green',Clinic:'pill-gold','Open Play':'pill-blue',Closed:'pill-gray'}[t]||'pill-gray'; }
+function loadingHTML(msg) {
+  return `<div class="loading-state"><div class="spinner"></div><div class="loading-text">${msg}</div></div>`;
+}
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('✓ Copied to clipboard'));
+}
+function voicePrompt(ctx) {
+  const ex = {
+    courts: '"Book court 3 for Sarah, 10 to 11:30"\n"Close court 2 all morning"\n"Cancel Miller\'s 9am"',
+    announcements: '"Add announcement: Easter Brunch, Sunday April 20, $65 per adult"\n"Remove the tournament notice"'
+  };
+  alert('ClubOS Voice — coming soon.\n\nWhen live:\n\n' + ex[ctx]);
+}
+
+let _toastTimer;
+function toast(msg, isError=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+function updateClock() {
+  document.getElementById('hdr-time').textContent = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+}
+
+// ═══════════════════════════════════════════════════════
+// ── INIT ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+(async () => {
+  updateClock();
+  setInterval(updateClock, 1000);
+  await checkConnection();
+  await render();
+})();
+</script>
+</body>
+</html>
