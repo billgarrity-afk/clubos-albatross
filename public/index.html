@@ -360,6 +360,7 @@ body::before {
           <div style="background:var(--white);border-radius:10px;width:130px;height:130px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://clubos-albatross.vercel.app/albatross-picks-mobile.html" width="120" height="120" style="border-radius:6px;" alt="Scan to join"/>
           </div>
+          <div id="pickCountDisplay" style="font-size:13px;color:var(--green);letter-spacing:1px;font-weight:600;text-align:center;min-height:20px;">Loading picks...</div>
           <div style="font-size:11px;color:var(--white-faint);letter-spacing:2px;text-transform:uppercase;text-align:center;">Scan to submit your picks</div>
         </div>
       </div>
@@ -426,11 +427,11 @@ const DATA = {
 
   specials: [
     
-    { id: "kitchenspecial",badge: "Kitchen Special", name: "Birdie Burger", desc: "8oz wagyu, truffle aioli, hand-cut fries",       price: "$16", active: true, soldOut: false },
+    { id: "kitchenspecial",badge: "Kitchen Special", name: "Birdie Burger", desc: "8oz wagyu, truffle aioli, tater tots",            price: "$16", active: true, soldOut: false },
     { id: "drinkspecial",  badge: "Drink Special",   name: "The Double Bogey", desc: "Double shot old fashioned · House recipe",   price: "$14", active: true, soldOut: false }
   ],
 
-  afternoonFeatured: { badge: "Today's Feature", name: "Birdie Burger", desc: "8oz wagyu blend, truffle aioli, caramelized onions, brioche bun. Served with hand-cut fries.", price: "$16" },
+  afternoonFeatured: { badge: "Today's Feature", name: "Birdie Burger", desc: "8oz wagyu blend, truffle aioli, caramelized onions, brioche bun. Served with tater tots.", price: "$16" },
   afternoonMinis: [
     { icon: "🍺", name: "Draft Beers", desc: "All 12 taps · Happy Hour 4–6pm", price: "$5" },
     { icon: "🥃", name: "Double Bogey", desc: "House old fashioned, double pour", price: "$14" }
@@ -629,8 +630,6 @@ function closeAIManager() {
   document.getElementById('aiResponse').className = 'ai-response';
   document.getElementById('aiResponse').textContent = 'Type a command above and the display will update instantly.';
 }
-document.getElementById('aiExamples').innerHTML = DATA.aiExamples.map(ex => `<div class="ai-example" onclick="document.getElementById('aiInput').value=this.textContent;document.getElementById('aiInput').focus()">${ex}</div>`).join('');
-
 async function handleAICommand() {
   const input = document.getElementById('aiInput');
   const btn = document.getElementById('aiSubmit');
@@ -673,6 +672,36 @@ function applyAIAction(r) {
   else if (r.action==='update_sponsor') { DATA.sponsor.name=r.name; DATA.sponsor.tagline=r.tagline||''; renderFooter(); }
 }
 
+// ═══════════════════════════════════════════
+// LIVE PICK COUNT — updates every 30 seconds
+// ═══════════════════════════════════════════
+const SUPABASE_URL = "https://ykfvwqewnfnibpzytspn.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrZnZ3cWV3bmZuaWJwenl0c3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE2NzYsImV4cCI6MjA5MDM5NzY3Nn0.cnMztZVHDV3Hof-26aRi4NIM7wKwjzxAfoMBR3oItms";
+
+async function loadPickCount() {
+  const el = document.getElementById('pickCountDisplay');
+  if (!el) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/albatross_bracket_picks?venue=eq.albatross&select=name`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }}
+    );
+    if (!res.ok) throw new Error();
+    const picks = await res.json();
+    const count = picks.length;
+    if (count === 0) {
+      el.textContent = 'Be the first to submit! 🏒';
+      el.style.color = 'var(--gold)';
+    } else {
+      el.textContent = `🏒 ${count} member${count !== 1 ? 's' : ''} submitted picks`;
+      el.style.color = 'var(--green)';
+    }
+  } catch(e) {
+    el.textContent = 'Picks open — scan to enter!';
+    el.style.color = 'var(--white-faint)';
+  }
+}
+
 document.addEventListener('keydown', e => {
   if ((e.key==='m'||e.key==='M') && document.activeElement.tagName!=='INPUT') openAIManager();
   if (e.key==='Escape') closeAIManager();
@@ -681,7 +710,10 @@ document.addEventListener('keydown', e => {
 
 function init() {
   renderMode(); renderSimulators(); renderAfternoon(); renderLeague();
-  renderSpecials(); renderSocial(); renderSchedule(); renderFooter();
+  renderSpecials(); renderSchedule(); renderFooter();
+  document.getElementById('aiExamples').innerHTML = DATA.aiExamples.map(ex => `<div class="ai-example" onclick="document.getElementById('aiInput').value=this.textContent;document.getElementById('aiInput').focus()">${ex}</div>`).join('');
+  loadPickCount();
+  setInterval(loadPickCount, 30000);
   updateClock(); setInterval(updateClock, 1000);
 }
 init();
