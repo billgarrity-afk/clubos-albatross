@@ -164,77 +164,78 @@
 
 <script>
 const LEAGUE = {
-  title: "2026 Winter Golf League",
-  week: "11", totalWeeks: "14",
+  title: "2026 Spring Golf League",
+  week: "1", totalWeeks: "12",
   sponsor: {
     name: "VICIOUS FISHES", sub: "Craft Brewery · Cary, NC",
-    callout: "Proud Sponsor of the\nWinter Golf League",
+    callout: "Proud Sponsor of the\n2026 Spring Golf League",
     cta: "viciousfishes.com", fish: "🐟"
   },
+  // Each flight combines A + B divisions, sorted by score
+  // bay: which TrackMan bay this flight plays in tonight
   divisions: [
-    { letter:"A", name:"Albatross", meta:"8 teams · 14 wks", bay:"Bay 1",
-      playoffNote:{label:"⚡ Playoffs",text:"Top 4 advance · Week 15"},
+    { letter:"", name:"Condor", meta:"6 teams · Week 1 of 12", bay:"Bay 1",
+      playoffNote:{label:"⚡ Week 1",text:"Season just started · Stay sharp"},
       teams:[
-        {name:"Northwood Zaddys",   detail:"+8 this week", score:1080, trend:"↑", place:"gold"},
-        {name:"Fairway to Heaven",  detail:"–45 back",     score:1035, trend:"–", place:"silver"},
-        {name:"The Rough Riders",   detail:"–190 back",    score:890,  trend:"↑", place:"bronze"},
-        {name:"Bogey Men",          detail:"–260 back",    score:820,  trend:"–", place:"other"},
-        {name:"Iron Maidens",       detail:"–330 back",    score:750,  trend:"↓", place:"other"},
-        {name:"Chip Happens",       detail:"–410 back",    score:670,  trend:"–", place:"other"}
+        {name:"Beef Boyz",          detail:"Div A · Leading",  score:100, trend:"↑", place:"gold"},
+        {name:"The Power Bottoms",  detail:"Div B · Leading",  score:100, trend:"↑", place:"gold"},
+        {name:"OCcasional Birdies", detail:"Div A",            score:90,  trend:"–", place:"bronze"},
+        {name:"The Glad Onion",     detail:"Div B",            score:90,  trend:"–", place:"bronze"},
+        {name:"Northwood Zaddys",   detail:"Div A",            score:80,  trend:"–", place:"other"},
+        {name:"The Schlongest Drive",detail:"Div B",           score:80,  trend:"–", place:"other"}
       ]
     },
-    { letter:"B", name:"Eagle", meta:"8 teams · 14 wks", bay:"Bay 2",
-      playoffNote:{label:"⚡ Playoffs",text:"Top 4 advance · Week 15"},
+    { letter:"", name:"Albatross", meta:"8 teams · Week 1 of 12", bay:"Bay 2",
+      playoffNote:{label:"⚡ Week 1",text:"Season just started · Stay sharp"},
       teams:[
-        {name:"Beef Boyz",             detail:"+3 this week", score:1035, trend:"↑", place:"gold"},
-        {name:"OCcasional Birdies",    detail:"–15 back",     score:1020, trend:"–", place:"silver"},
-        {name:"The Schlongest Drive",  detail:"–155 back",    score:880,  trend:"↓", place:"bronze"},
-        {name:"Fore Scores & 7 Beers", detail:"–230 back",    score:805,  trend:"–", place:"other"},
-        {name:"Putt Pirates",          detail:"–295 back",    score:740,  trend:"↓", place:"other"},
-        {name:"Driver's Ed Dropouts",  detail:"–395 back",    score:640,  trend:"–", place:"other"}
+        {name:"Degenerates",        detail:"Div A · Leading",  score:100, trend:"↑", place:"gold"},
+        {name:"125 West",           detail:"Div B",            score:95,  trend:"↑", place:"silver"},
+        {name:"Putt Plugs",         detail:"Div B",            score:95,  trend:"↑", place:"silver"},
+        {name:"Bomb Watson",        detail:"Div A",            score:90,  trend:"–", place:"other"},
+        {name:"Wah Gwan Delilah",   detail:"Div A",            score:80,  trend:"–", place:"other"},
+        {name:"Alby Bois",          detail:"Div B",            score:80,  trend:"–", place:"other"}
       ]
     },
-    { letter:"C", name:"Birdie", meta:"8 teams · 14 wks", bay:"Bay 1",
-      playoffNote:{label:"⚡ Playoffs",text:"Top 4 advance · Week 15"},
+    { letter:"", name:"Eagle", meta:"8 teams · Week 1 of 12", bay:"Bay 1",
+      playoffNote:{label:"⚡ Week 1",text:"Season just started · Stay sharp"},
       teams:[
-        {name:"Wah Gwan Delilah",  detail:"+12 this wk 🔥", score:995, trend:"↑", place:"gold"},
-        {name:"Par for the Course",detail:"–20 back",        score:975, trend:"↓", place:"silver"},
-        {name:"Loft Expectations", detail:"–170 back",       score:825, trend:"–", place:"bronze"},
-        {name:"Tee'd & Confused",  detail:"–255 back",       score:740, trend:"↑", place:"other"},
-        {name:"Full Send Freddie", detail:"–315 back",       score:680, trend:"–", place:"other"},
-        {name:"Sand Trap Saints",  detail:"–390 back",       score:605, trend:"↓", place:"other"}
+        {name:"Alby: We have the Yeets", detail:"Div B · Leading", score:100, trend:"↑", place:"gold"},
+        {name:"Half-Baked",              detail:"Div A",            score:95,  trend:"↑", place:"silver"},
+        {name:"Thicc Kings",             detail:"Div A",            score:95,  trend:"↑", place:"silver"},
+        {name:"Lay-Up Boys",             detail:"Div B",            score:90,  trend:"–", place:"other"},
+        {name:"The Big Bombers",         detail:"Div A",            score:80,  trend:"–", place:"other"},
+        {name:"Worthless Swampy Fools",  detail:"Div B",            score:80,  trend:"–", place:"other"}
       ]
     },
-    { letter:"D", name:"Par", meta:"8 teams · 14 wks", bay:"Bay 2",
-      playoffNote:{label:"⚡ Tiebreaker",text:"Hack Attack vs Shanks · Wk 12"},
+    { letter:"", name:"Birdie", meta:"8 teams · Week 1 of 12", bay:"Bay 2",
+      playoffNote:{label:"⚡ Week 1",text:"Season just started · Stay sharp"},
       teams:[
-        {name:"Hack Attack",           detail:"Tied for lead", score:910, trend:"↑", place:"gold"},
-        {name:"Shanks for Memories",   detail:"Tied for lead", score:910, trend:"↑", place:"gold"},
-        {name:"The Divot Diggers",     detail:"–85 back",      score:825, trend:"–", place:"bronze"},
-        {name:"Grip It & Rip It",      detail:"–160 back",     score:750, trend:"↓", place:"other"},
-        {name:"Cary Golf Dads",        detail:"–220 back",     score:690, trend:"–", place:"other"},
-        {name:"Mulligan's Anonymous",  detail:"–310 back",     score:600, trend:"–", place:"other"}
+        {name:"LOBSTAHS!",          detail:"Div A",  score:95, trend:"↑", place:"gold"},
+        {name:"The Wedgies",        detail:"Div A",  score:95, trend:"↑", place:"gold"},
+        {name:"The Fore Horsemen",  detail:"Div B",  score:95, trend:"↑", place:"gold"},
+        {name:"Kildaire Killers",   detail:"Div B",  score:95, trend:"↑", place:"gold"},
+        {name:"Grip It & Rip It",   detail:"Div B",  score:80, trend:"–", place:"other"},
+        {name:"Golfmaxxers",        detail:"Div A",  score:75, trend:"–", place:"other"}
       ]
     },
-    { letter:"E", name:"Bogey", meta:"8 teams · 14 wks", bay:"Bay 1",
-      playoffNote:{label:"⚡ Playoffs",text:"Top 4 advance · Week 15"},
+    { letter:"", name:"Par", meta:"5 teams · Week 1 of 12", bay:"Bay 1",
+      playoffNote:{label:"⚡ Week 1",text:"Season just started · Stay sharp"},
       teams:[
-        {name:"TrackMan Cowboys",    detail:"+6 this week", score:945, trend:"↑", place:"gold"},
-        {name:"The Yippers",         detail:"–35 back",     score:910, trend:"–", place:"silver"},
-        {name:"Downtown Fore",       detail:"–145 back",    score:800, trend:"↑", place:"bronze"},
-        {name:"Iron Byron Fan Club", detail:"–225 back",    score:720, trend:"↓", place:"other"},
-        {name:"Short Game Surgeons", detail:"–290 back",    score:655, trend:"–", place:"other"},
-        {name:"Club Soda Bros",      detail:"–365 back",    score:580, trend:"–", place:"other"}
+        {name:"Team DTC",              detail:"Leading",  score:110, trend:"↑", place:"gold"},
+        {name:"Gobblin' Dirty",        detail:"–10 back", score:100, trend:"↑", place:"silver"},
+        {name:"Hack Attack",           detail:"–20 back", score:90,  trend:"–", place:"bronze"},
+        {name:"Shanks for the Memories",detail:"–30 back",score:80,  trend:"–", place:"other"},
+        {name:"One Good Shot",         detail:"–40 back", score:70,  trend:"–", place:"other"}
       ]
     }
   ],
   ticker:[
-    "🐟 <span class='beer'>Vicious Fishes Brewery</span> — Proud sponsor of the 2026 Winter League · Find them in Cary & Angier",
-    "🏆 <b>Northwood Zaddys</b> lead Albatross Div with <span class='hi'>1,080 pts</span> after a big Week 11",
-    "⚡ <b>Hack Attack</b> and <b>Shanks for Memories</b> dead-locked in Par Div — tiebreaker Week 12",
-    "🔥 <b>Wah Gwan Delilah</b> surge into Birdie Div lead — <span class='hi'>+12 this week</span>",
-    "📅 <b>Week 12</b> of 14 — Playoffs begin Week 15 · Top 4 from each division advance",
-    "🏌️ Want to join next season? Scan the QR to register your team"
+    "🐟 <span class='beer'>Vicious Fishes Brewery</span> — Proud sponsor of the 2026 Spring League · Find them in Cary & Angier",
+    "🏌️ <b>Week 1</b> of 12 is in the books — season is just getting started",
+    "🏆 <b>Team DTC</b> leads Par flight with <span class='hi'>110 pts</span> after Week 1",
+    "🔥 Four-way tie at the top of <b>Birdie</b> flight — anyone's game",
+    "⛳ <b>Degenerates</b> top Albatross flight · <b>Beef Boyz</b> lead Condor",
+    "🏌️ Want to join next season? Scan the QR code to register your team"
   ]
 };
 
