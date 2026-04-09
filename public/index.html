@@ -352,10 +352,16 @@ body::before {
     <div class="right-col">
       <div class="social-panel">
         <div class="panel-header">
-          <div class="panel-eyebrow">Latest from Social</div>
-          <div class="ig-pill">📸 @albatrossgolfcary</div>
+          <div class="panel-eyebrow">🏒 NHL Pick'em — Live Now</div>
         </div>
-        <div class="social-posts" id="socialPosts"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px;padding:4px 0;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:var(--white);letter-spacing:1px;text-align:center;line-height:1.2;">2026 NHL <span style="color:var(--green);">PLAYOFFS</span> PICK'EM</div>
+          <div style="font-size:12px;color:var(--white-dim);text-align:center;line-height:1.5;max-width:220px;">Make your bracket picks. Track your score live on screen.</div>
+          <div style="background:var(--white);border-radius:10px;width:130px;height:130px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://clubos-albatross.vercel.app/albatross-picks-mobile.html" width="120" height="120" style="border-radius:6px;" alt="Scan to join"/>
+          </div>
+          <div style="font-size:11px;color:var(--white-faint);letter-spacing:2px;text-transform:uppercase;text-align:center;">Scan to submit your picks</div>
+        </div>
       </div>
       <div class="schedule-panel">
         <div class="panel-header">
@@ -408,8 +414,8 @@ body::before {
 // ═══════════════════════════════════════════
 const DATA = {
   venue: { name: "Albatross Golf", handle: "@albatrossgolfcary", location: "Cary, NC" },
-  sponsor: { name: "Perch", tagline: "Real Estate · Triangle Area" },
-  ticker: "Walk-ins welcome on all bays · Book online at albatrossgolfcary.com · League sign-ups now open for Summer Season · Ask about private events & corporate packages",
+  sponsor: { name: "Vicious Fishes", tagline: "Craft Brewery · Cary, NC" },
+  ticker: "🏒 NHL Playoffs Pick'em is LIVE — Scan the QR code to submit your bracket picks · Walk-ins welcome on all bays · Book online at albatrossgolfcary.com · Ask about corporate events & private buyouts",
 
   simulators: [
     { num: 1, name: "Bay 1", tech: "Full Swing KIT · 85+ Courses", status: "open", until: "" },
@@ -419,7 +425,7 @@ const DATA = {
   ],
 
   specials: [
-    { id: "happyhour",     badge: "Happy Hour",     name: "Draft Beers",   desc: "All drafts on tap · Mon–Fri 4–6 PM",            price: "$5",  active: true, soldOut: false },
+    
     { id: "kitchenspecial",badge: "Kitchen Special", name: "Birdie Burger", desc: "8oz wagyu, truffle aioli, hand-cut fries",       price: "$16", active: true, soldOut: false },
     { id: "drinkspecial",  badge: "Drink Special",   name: "The Double Bogey", desc: "Double shot old fashioned · House recipe",   price: "$14", active: true, soldOut: false }
   ],
@@ -459,7 +465,7 @@ const DATA = {
   schedule: [
     { time: "10:00 AM", event: "Open Play Begins", type: "normal", status: "done" },
     { time: "12:00 PM", event: "Lunch Special: Birdie Burger", type: "event", status: "done" },
-    { time: "4:00 PM",  event: "Happy Hour Starts", type: "event", status: "next" },
+    { time: "4:00 PM",  event: "NHL Pick'em — Submit Your Bracket", type: "games", status: "next" },
     { time: "5:30 PM",  event: "Division A League Night", type: "league", status: "next" },
     { time: "7:00 PM",  event: "Division B League Night", type: "league", status: "next" },
     { time: "8:30 PM",  event: "ClubOS Games — Pick'em", type: "games", status: "next" },
